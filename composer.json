@@ -33,7 +33,10 @@
         "laravel": {
             "providers": [
                 "Anik\\Laravel\\Prometheus\\Providers\\PrometheusServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Prometheus": "Anik\\Laravel\\Prometheus\\Facades\\Prometheus"
+            }
         }
     }
 }
