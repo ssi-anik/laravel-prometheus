@@ -73,13 +73,13 @@ jobs:
           composer require illuminate/support:^${{ matrix.laravel }} --no-interaction --prefer-dist
 
       # Laravel < 10 uses PHPUnit ^9.x
-      - name: "Run tests when Laravel < 10"
-        if: ${{ matrix.laravel }} < 10
-        run: ./vendor/bin/phpunit --configuration phpunit9.xml --testdox --verbose
-
-      - name: "Run tests when Laravel >= 10"
-        if: ${{ matrix.laravel }} >= 10
-        run: ./vendor/bin/phpunit --configuration phpunit.xml --testdox
+      - name: Run tests
+        run: |
+          if [[ ${{ matrix.laravel }} -lt 10 ]]; then
+            ./vendor/bin/phpunit --configuration phpunit9.xml --testdox
+          else
+            ./vendor/bin/phpunit --configuration phpunit.xml --testdox
+          fi
 
   coverage:
     needs: tests
