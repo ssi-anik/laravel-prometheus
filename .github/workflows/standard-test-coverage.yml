@@ -64,7 +64,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: redis,apc
-          "ini-values":apc.enable_cli=1
+          ini-values: apc.enable_cli=1
 
       - name: Install dependencies
         run: |
@@ -89,7 +89,7 @@ jobs:
           coverage: pcov
           php-version: 8.2
           extensions: redis,apc
-          "ini-values":apc.enable_cli=1
+          ini-values: apc.enable_cli=1
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
