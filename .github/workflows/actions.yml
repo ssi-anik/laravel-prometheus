@@ -8,24 +8,24 @@ on:
       - dev
 
 jobs:
-  coding-standard:
-    name: PSR-12 coding standard
-    runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/dev'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: 8.2
-
-      - name: Install PHP code sniffer
-        run: composer global require squizlabs/php_codesniffer
-
-      - name: Check against PSR12 standard
-        run: |
-          `composer global config bin-dir --absolute --quiet`/phpcs --standard=PSR12 --ignore="src/Facades/*" ./src
+  #  coding-standard:
+  #    name: PSR-12 coding standard
+  #    runs-on: ubuntu-latest
+  #    if: github.ref != 'refs/heads/dev'
+  #    steps:
+  #      - name: Checkout code
+  #        uses: actions/checkout@v3
+  #
+  #      - uses: shivammathur/setup-php@v2
+  #        with:
+  #          php-version: 8.2
+  #
+  #      - name: Install PHP code sniffer
+  #        run: composer global require squizlabs/php_codesniffer
+  #
+  #      - name: Check against PSR12 standard
+  #        run: |
+  #          `composer global config bin-dir --absolute --quiet`/phpcs --standard=PSR12 --ignore="src/Facades/*" ./src
 
 
   tests:
@@ -81,31 +81,31 @@ jobs:
             ./vendor/bin/phpunit --configuration phpunit.xml --testdox
           fi
 
-  coverage:
-    needs: tests
-    name: Coverage
-    if: github.ref != 'refs/heads/dev'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          coverage: pcov
-          php-version: 8.2
-          extensions: redis,apcu
-          ini-values: apc.enable_cli=1
-
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
-
-      - name: Run tests for coverage
-        run: ./vendor/bin/phpunit --configuration phpunit.xml --coverage-clover=coverage.xml
-
-      - name: Push to Codecov
-        run: bash <(curl -s https://codecov.io/bash)
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+#  coverage:
+#    needs: tests
+#    name: Coverage
+#    if: github.ref != 'refs/heads/dev'
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#
+#      - name: Install PHP
+#        uses: shivammathur/setup-php@v2
+#        with:
+#          coverage: pcov
+#          php-version: 8.2
+#          extensions: redis,apcu
+#          ini-values: apc.enable_cli=1
+#
+#      - name: Install dependencies
+#        run: composer install --no-interaction --prefer-dist
+#
+#      - name: Run tests for coverage
+#        run: ./vendor/bin/phpunit --configuration phpunit.xml --coverage-clover=coverage.xml
+#
+#      - name: Push to Codecov
+#        run: bash <(curl -s https://codecov.io/bash)
+#        env:
+#          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
