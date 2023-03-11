@@ -4,6 +4,7 @@ namespace Anik\Laravel\Prometheus;
 
 use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Str;
 use Prometheus\Storage\Adapter;
 use Prometheus\Storage\APC;
 use Prometheus\Storage\APCng;
@@ -53,9 +54,7 @@ class PrometheusManager
      */
     public function adapter(?string $storage = null): Adapter
     {
-        if (is_null($storage = $storage ?? $this->getDefaultStorage())) {
-            throw new PrometheusException('Invalid storage [null].');
-        }
+        $storage = $storage ?? $this->getDefaultStorage();
 
         if (isset($this->adapters[$storage])) {
             return $this->adapters[$storage];
@@ -97,7 +96,7 @@ class PrometheusManager
      */
     public function createApcAdapter(): Adapter
     {
-        return $this->app->make(APC::class, [...$this->fromConfig('options.apc', [])]);
+        return $this->app->make(APC::class, $this->fromConfig('options.apc', []));
     }
 
     /**
@@ -106,7 +105,7 @@ class PrometheusManager
      */
     public function createApcngAdapter(): Adapter
     {
-        return $this->app->make(APCng::class, [...$this->fromConfig('options.apcng', [])]);
+        return $this->app->make(APCng::class, $this->fromConfig('options.apcng', []));
     }
 
     /**
