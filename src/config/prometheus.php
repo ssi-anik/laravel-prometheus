@@ -18,8 +18,8 @@ return [
             'read_timeout' => env('PROMETHEUS_REDIS_READ_TIMEOUT', 10),
             'persistent_connections' => env('PROMETHEUS_REDIS_PERSISTENT_CONNECTION', false),
         ],
-        /*'apc' => ['prefix' => ''],
-        'apcng' => ['prefix' => ''],*/
+        /*'apc' => ['prometheusPrefix' => ''],
+        'apcng' => ['prometheusPrefix' => ''],*/
     ],
     'request' => [
         /** Enable request response metrics */
