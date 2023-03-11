@@ -15,7 +15,7 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
 
     protected function publishAndMergeConfig()
     {
-        $path = realpath(__DIR__.'/../config/prometheus.php');
+        $path = realpath(__DIR__ . '/../config/prometheus.php');
 
         if ($this->app->runningInConsole()) {
             $this->publishes([$path => config_path('prometheus.php'),]);

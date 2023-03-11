@@ -27,7 +27,7 @@ class PrometheusManager
 
     protected function fromConfig(string $key, $default = null)
     {
-        return $this->app['config']->get('prometheus.'.$key)
+        return $this->app['config']->get('prometheus.' . $key)
             ?? $this->app['config']->get($key)
             ?? $default;
     }
@@ -60,7 +60,7 @@ class PrometheusManager
             return $this->adapters[$storage];
         }
 
-        $method = 'create'.Str::studly($storage).'Adapter';
+        $method = 'create' . Str::studly($storage) . 'Adapter';
         if (method_exists($this, $method)) {
             return $this->adapters[$storage] = call_user_func([$this, $method]);
         }
