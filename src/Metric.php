@@ -19,6 +19,16 @@ class Metric
         $this->namespace = $namespace;
     }
 
+    public function getAdapter(): Adapter
+    {
+        return $this->adapter;
+    }
+
+    public function getNamespace(): string
+    {
+        return $this->namespace;
+    }
+
     public function counter(string $name): Counter
     {
         return Counter::create($name)
