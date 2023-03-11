@@ -39,4 +39,12 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
     {
         $this->app->bind('prometheus', fn($app) => $app->make(PrometheusManager::class));
     }
+
+    public function provides(): array
+    {
+        return [
+            'prometheus',
+            PrometheusManager::class,
+        ];
+    }
 }
