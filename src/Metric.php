@@ -32,28 +32,28 @@ class Metric
     public function counter(string $name): Counter
     {
         return Counter::create($name)
-                      ->namespace($this->namespace)
+                      ->setNamespace($this->namespace)
                       ->setAdapter($this->adapter);
     }
 
     public function histogram(string $name): Histogram
     {
         return Histogram::create($name)
-                        ->namespace($this->namespace)
+                        ->setNamespace($this->namespace)
                         ->setAdapter($this->adapter);
     }
 
     public function gauge(string $name): Gauge
     {
         return Gauge::create($name)
-                    ->namespace($this->namespace)
+                    ->setNamespace($this->namespace)
                     ->setAdapter($this->adapter);
     }
 
     public function summary(string $name): Summary
     {
         return Summary::create($name)
-                      ->namespace($this->namespace)
+                      ->setNamespace($this->namespace)
                       ->setAdapter($this->adapter);
     }
 }

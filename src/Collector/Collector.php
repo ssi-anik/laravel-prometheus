@@ -24,11 +24,16 @@ abstract class Collector
         return new static($name);
     }
 
-    public function namespace(string $namespace): self
+    public function setNamespace(string $namespace): self
     {
         $this->namespace = $namespace;
 
         return $this;
+    }
+
+    public function getNamespace(): string
+    {
+        return $this->namespace;
     }
 
     public function setAdapter(Adapter $adapter): self
