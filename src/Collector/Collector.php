@@ -3,12 +3,14 @@
 namespace Anik\Laravel\Prometheus\Collector;
 
 use Anik\Laravel\Prometheus\PrometheusManager;
+use Prometheus\CollectorRegistry;
 use Prometheus\Storage\Adapter;
 
 abstract class Collector
 {
     protected string $namespace = '';
     protected string $name;
+    protected ?string $helpText = null;
     protected array $labels = [];
     protected bool $isSaved = false;
     protected ?Adapter $adapter = null;
@@ -19,7 +21,8 @@ abstract class Collector
         $this->name = $name;
     }
 
-    public static function create(string $name): self
+    /** @return static */
+    public static function create(string $name)
     {
         return new static($name);
     }
@@ -34,6 +37,23 @@ abstract class Collector
     public function getNamespace(): string
     {
         return $this->namespace;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setHelpText(string $helpText): self
+    {
+        $this->helpText = $helpText;
+
+        return $this;
+    }
+
+    public function getHelpText(): string
+    {
+        return $this->helpText ?? $this->name;
     }
 
     public function setAdapter(Adapter $adapter): self
@@ -53,6 +73,13 @@ abstract class Collector
         $this->storage = $storage;
 
         return $this;
+    }
+
+    public function getCollectorRegistry(): CollectorRegistry
+    {
+        return app()->make(CollectorRegistry::class, [
+            'storageAdapter' => $this->getAdapter(),
+        ]);
     }
 
     public function labels(array $labels): self
