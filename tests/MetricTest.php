@@ -42,6 +42,8 @@ class MetricTest extends TestCase
                 [
                     'method' => 'summary',
                     'expected' => Summary::class,
+                    'required' => 'observe',
+                    'param' => 2.2,
                 ],
             ],
         ];
