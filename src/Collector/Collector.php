@@ -96,20 +96,18 @@ abstract class Collector
         return $this;
     }
 
-    public function save(): bool
+    public function save(): void
     {
         if ($this->isSaved) {
-            return true;
+            return;
         }
 
-        if (!$this->store()) {
-            return false;
-        }
+        $this->store();
 
-        return $this->isSaved = true;
+        $this->isSaved = true;
     }
 
-    abstract protected function store(): bool;
+    abstract protected function store(): void;
 
     public function __destruct()
     {

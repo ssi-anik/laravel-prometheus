@@ -42,7 +42,7 @@ final class Gauge extends Collector
      * @throws \Prometheus\Exception\MetricsRegistrationException
      * @throws \Anik\Laravel\Prometheus\Exceptions\PrometheusException
      */
-    public function store(): bool
+    public function store(): void
     {
         switch ($this->operation) {
             case self::$INCREMENT:
@@ -65,7 +65,5 @@ final class Gauge extends Collector
                       ->getOrRegisterGauge($this->getNamespace(), $this->getName(), $this->getHelpText(), $keys);
 
         call_user_func_array([$gauge, $method], [$this->value, $values]);
-
-        return true;
     }
 }

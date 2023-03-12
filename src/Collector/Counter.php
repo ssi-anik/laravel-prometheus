@@ -17,7 +17,7 @@ final class Counter extends Collector
     /**
      * @throws \Prometheus\Exception\MetricsRegistrationException
      */
-    public function store(): bool
+    public function store(): void
     {
         $keys = array_keys($this->labels);
         $values = array_values($this->labels);
@@ -30,7 +30,5 @@ final class Counter extends Collector
                  $keys
              )
              ->incBy($this->count, $values);
-
-        return true;
     }
 }

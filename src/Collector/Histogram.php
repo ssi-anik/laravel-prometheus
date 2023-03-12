@@ -28,7 +28,7 @@ final class Histogram extends Collector
      * @throws \Prometheus\Exception\MetricsRegistrationException
      * @throws \Anik\Laravel\Prometheus\Exceptions\PrometheusException
      */
-    protected function store(): bool
+    protected function store(): void
     {
         if (is_null($this->value)) {
             throw new PrometheusException('Did you forget to set value through "observe" method?');
@@ -46,7 +46,5 @@ final class Histogram extends Collector
                  $this->buckets,
              )
              ->observe($this->value, $values);
-
-        return true;
     }
 }

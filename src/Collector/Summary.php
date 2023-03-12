@@ -4,8 +4,7 @@ namespace Anik\Laravel\Prometheus\Collector;
 
 final class Summary extends Collector
 {
-    public function store(): bool
+    public function store(): void
     {
-        return true;
     }
 }
