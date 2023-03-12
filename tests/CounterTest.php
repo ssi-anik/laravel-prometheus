@@ -150,34 +150,34 @@ class CounterTest extends TestCase
         Counter::create('my_counter')->label('code', 200)->label('url', '/metrics');
     }
 
-    public static function incrementValueDataProvider(): array
+    public static function incrementMethodDataProvider(): array
     {
         return [
-            'increment is never called' => [
+            'is never called' => [
                 [
                     'invoke' => false,
                     'expected' => 1,
                 ],
             ],
-            'increment is called without any parameter' => [
+            'is called without any parameter' => [
                 [
                     'count' => null,
                     'expected' => 1,
                 ],
             ],
-            'increment is called count set to 0' => [
+            'is called with parameter 0' => [
                 [
                     'count' => 0,
                     'expected' => 0,
                 ],
             ],
-            'increment is called count set to 10.65' => [
+            'is called with parameter 10.65' => [
                 [
                     'count' => 10.65,
                     'expected' => 10.65,
                 ],
             ],
-            'increment is called count set to 1065' => [
+            'is called with parameter 1065' => [
                 [
                     'count' => 1065,
                     'expected' => 1065,
@@ -186,7 +186,7 @@ class CounterTest extends TestCase
         ];
     }
 
-    /** @dataProvider incrementValueDataProvider */
+    /** @dataProvider incrementMethodDataProvider */
     public function testIncrementMethod(array $data)
     {
         $counterMock = $this->createMock(\Prometheus\Counter::class);
