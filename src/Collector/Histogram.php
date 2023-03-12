@@ -6,8 +6,7 @@ use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
 
 final class Histogram extends Collector
 {
-    /** @var null|int|float */
-    protected $value = null;
+    protected ?float $value = null;
     protected ?array $buckets = null;
 
     public function buckets(array $buckets): self
