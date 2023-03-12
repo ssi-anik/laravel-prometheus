@@ -96,6 +96,13 @@ abstract class Collector
         return $this;
     }
 
+    public function skip(): self
+    {
+        $this->isSaved = true;
+
+        return $this;
+    }
+
     public function save(): void
     {
         if ($this->isSaved) {

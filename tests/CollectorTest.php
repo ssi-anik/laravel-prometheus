@@ -84,4 +84,39 @@ class CollectorTest extends TestCase
         $this->assertInstanceOf(InMemory::class, $summary->getAdapter());
         $summary->observe(2.2);
     }
+
+    public function testCallingSkipMethodWillNotSaveTheMetrics()
+    {
+        $counterMock = $this->createMock(\Prometheus\Counter::class);
+        $counterMock->expects($this->never())->method('incBy');
+
+        $histogramMock = $this->createMock(\Prometheus\Histogram::class);
+        $histogramMock->expects($this->never())->method('observe');
+
+        $gaugeMock = $this->createMock(\Prometheus\Gauge::class);
+        $gaugeMock->expects($this->never())->method('set');
+
+        $summaryMock = $this->createMock(\Prometheus\Summary::class);
+        $summaryMock->expects($this->never())->method('observe');
+
+        $registryMock = $this->createMock(CollectorRegistry::class);
+        $registryMock->method('getOrRegisterCounter')
+                     ->willReturn($counterMock);
+        $registryMock->method('getOrRegisterGauge')
+                     ->willReturn($gaugeMock);
+        $registryMock->method('getOrRegisterHistogram')
+                     ->willReturn($histogramMock);
+        $registryMock->method('getOrRegisterSummary')
+                     ->willReturn($summaryMock);
+
+        $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
+
+        Counter::create('counter')->increment()->skip();
+
+        Histogram::create('histogram')->observe(2.2)->skip();
+
+        Gauge::create('gauge')->set(2.2)->skip();
+
+        Summary::create('summary')->observe(2.2)->skip();
+    }
 }
