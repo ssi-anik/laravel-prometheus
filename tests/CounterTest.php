@@ -128,6 +128,28 @@ class CounterTest extends TestCase
         }
     }
 
+    public function testLabelNameAndValueCanBeSetUsingLabelMethod()
+    {
+        $counterMock = $this->createMock(\Prometheus\Counter::class);
+        $counterMock->expects($this->once())->method('incBy')
+                    ->with($this->anything(), $this->identicalTo([200, '/metrics']));
+
+        $registryMock = $this->createMock(CollectorRegistry::class);
+        $registryMock->expects($this->once())
+                     ->method('getOrRegisterCounter')
+                     ->with(
+                         $this->anything(),
+                         $this->anything(),
+                         $this->anything(),
+                         $this->identicalTo(['code', 'url'])
+                     )
+                     ->willReturn($counterMock);
+
+        $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
+
+        Counter::create('my_counter')->label('code', 200)->label('url', '/metrics');
+    }
+
     public static function incrementValueDataProvider(): array
     {
         return [
