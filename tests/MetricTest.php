@@ -12,33 +12,71 @@ use Prometheus\Storage\InMemory;
 
 class MetricTest extends TestCase
 {
+    use InteractsWithStorage;
+
     public static function metricTypeMethodDataProvider(): array
     {
         return [
-            'counter' => ['counter', Counter::class],
-            'histogram' => ['histogram', Histogram::class],
-            'gauge' => ['gauge', Gauge::class],
-            'summary' => ['summary', Summary::class],
+            'counter' => [
+                [
+                    'method' => 'counter',
+                    'expected' => Counter::class,
+                ],
+            ],
+            'histogram' => [
+                [
+                    'method' => 'histogram',
+                    'expected' => Histogram::class,
+                ],
+            ],
+            'gauge' => [
+                [
+                    'method' => 'gauge',
+                    'expected' => Gauge::class,
+                    'required' => 'increment',
+                ],
+            ],
+            'summary' => [
+                [
+                    'method' => 'summary',
+                    'expected' => Summary::class,
+                ],
+            ],
         ];
     }
 
     /** @dataProvider metricTypeMethodDataProvider */
-    public function testMethodsReturnCorrectCollectorType(string $method, string $expected)
+    public function testMethodsReturnCorrectCollectorType(array $data)
     {
+        $method = $data['method'];
+        $expected = $data['expected'];
+
         $adapter = $this->app->make(PrometheusManager::class)->adapter('memory');
 
         $metric = new Metric($adapter);
 
-        $this->assertInstanceOf($expected, $metric->$method('name'));
+        $collector = $metric->$method('name');
+
+        if ($data['required'] ?? null) {
+            call_user_func_array([$collector, $data['required']], isset($data['param']) ? (array) $data['param'] : []);
+        }
+
+        $this->assertInstanceOf($expected, $collector);
     }
 
     /** @dataProvider metricTypeMethodDataProvider */
-    public function testMethodsPassesAdapterAndNamespaceToCollector(string $method)
+    public function testMethodsPassesAdapterAndNamespaceToCollector(array $data)
     {
+        $method = $data['method'];
+
         $adapter = $this->app->make(PrometheusManager::class)->adapter('memory');
 
         $metric = new Metric($adapter, $namespace = '__NAMESPACE_');
         $collector = $metric->$method('name');
+
+        if ($data['required'] ?? null) {
+            call_user_func_array([$collector, $data['required']], isset($data['param']) ? (array) $data['param'] : []);
+        }
 
         $this->assertInstanceOf(InMemory::class, $collector->getAdapter());
         $this->assertSame($namespace, $collector->getNamespace());
