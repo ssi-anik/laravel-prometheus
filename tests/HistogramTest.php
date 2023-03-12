@@ -216,7 +216,7 @@ class HistogramTest extends TestCase
     }
 
     /** @dataProvider observeMethodDataProvider */
-    public function testIncrementMethod(array $data)
+    public function testObserveMethod(array $data)
     {
         $histogramMock = $this->createMock(\Prometheus\Histogram::class);
         $histogramMock->expects($this->once())->method('observe')->with($this->identicalTo($data['expected']));
