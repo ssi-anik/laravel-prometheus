@@ -2,22 +2,51 @@
 
 namespace Anik\Laravel\Prometheus\Collector;
 
+use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
+
 final class Histogram extends Collector
 {
-    public static function forRequest(): self
+    /** @var null|int|float */
+    protected $value = null;
+    protected ?array $buckets = null;
+
+    public function buckets(array $buckets): self
     {
-        return self::create(config('prometheus.request.histogram.name'))
-                   ->setNamespace(config('prometheus.namespace') ?? '');
+        $this->buckets = $buckets;
+
+        return $this;
     }
 
-    public static function forDatabase(): self
+    public function observe(float $value): self
     {
-        return self::create(config('prometheus.database.histogram.name'))
-                   ->setNamespace(config('prometheus.namespace') ?? '');
+        $this->value = $value;
+
+        return $this;
     }
 
+    /**
+     * @throws \Prometheus\Exception\MetricsRegistrationException
+     * @throws \Anik\Laravel\Prometheus\Exceptions\PrometheusException
+     */
     protected function store(): bool
     {
+        if (is_null($this->value)) {
+            throw new PrometheusException('Did you forget to set value through "observe" method?');
+        }
+
+        $keys = array_keys($this->labels);
+        $values = array_values($this->labels);
+
+        $this->getCollectorRegistry()
+             ->getOrRegisterHistogram(
+                 $this->getNamespace(),
+                 $this->getName(),
+                 $this->getHelpText(),
+                 $keys,
+                 $this->buckets,
+             )
+             ->observe($this->value, $values);
+
         return true;
     }
 }

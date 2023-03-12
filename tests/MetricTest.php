@@ -27,6 +27,8 @@ class MetricTest extends TestCase
                 [
                     'method' => 'histogram',
                     'expected' => Histogram::class,
+                    'required' => 'observe',
+                    'param' => 2.2,
                 ],
             ],
             'gauge' => [
