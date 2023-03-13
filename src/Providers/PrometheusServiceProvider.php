@@ -2,6 +2,7 @@
 
 namespace Anik\Laravel\Prometheus\Providers;
 
+use Anik\Laravel\Prometheus\Controllers\MetricController;
 use Anik\Laravel\Prometheus\PrometheusManager;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
@@ -11,6 +12,7 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
     public function boot(): void
     {
         $this->publishAndMergeConfig();
+        $this->enableExportRoute();
     }
 
     protected function publishAndMergeConfig()
@@ -22,6 +24,25 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
         }
 
         $this->mergeConfigFrom($path, 'prometheus');
+    }
+
+    protected function enableExportRoute(): void
+    {
+        $config = config('prometheus.export');
+
+        if (false === ($config['enabled'] ?? true)) {
+            return;
+        }
+
+        $this->app['router']->group(
+            $config['attributes'] ?? [],
+            function ($route) use ($config) {
+                $route->addRoute(
+                    $config['method'] ?? 'GET',
+                    $config['path'] ?? '/metrics',
+                    ['as' => 'laravel.prometheus.export', 'uses' => MetricController::class]
+                );
+            });
     }
 
     public function register(): void
