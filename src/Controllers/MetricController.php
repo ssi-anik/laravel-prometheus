@@ -17,6 +17,10 @@ class MetricController
         $renderer = new RenderTextFormat();
         $result = $renderer->render($registry->getMetricFamilySamples());
 
-        return response($result)->header('content-type', RenderTextFormat::MIME_TYPE);
+        return response(
+            $result,
+            200,
+            ['content-type' => RenderTextFormat::MIME_TYPE]
+        );
     }
 }

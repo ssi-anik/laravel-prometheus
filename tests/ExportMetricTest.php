@@ -2,6 +2,7 @@
 
 namespace Anik\Laravel\Prometheus\Test;
 
+use Prometheus\RenderTextFormat;
 use Prometheus\Storage\InMemory;
 
 class ExportMetricTest extends TestCase
@@ -37,10 +38,14 @@ class ExportMetricTest extends TestCase
 
     public function testCanPassQueryParamToSelectStorageOnTheFly()
     {
-        /*$inMemoryMock = $this->createMock(InMemory::class);
-        $inMemoryMock->expects($this->never())->method($this->anything());
-        $this->app->bind('_mock', fn() => $inMemoryMock);
-        $this->app->bind('_test', fn() => $inMemoryMock);*/
+        // Default metrics is pushed whenever collector registry is instantiated
+        $firstMock = $this->createMock(InMemory::class);
+        $firstMock->expects($this->atLeast(2))->method($this->anything());
+        $this->app->bind('_mock', fn() => $firstMock);
+
+        $secondMock = $this->createMock(InMemory::class);
+        $secondMock->expects($this->atLeast(2))->method($this->anything());
+        $this->app->bind('_test', fn() => $secondMock);
 
         $this->get('/metrics?storage=_mock')->assertStatus(200);
         $this->get('/metrics?storage=_test')->assertStatus(200);
@@ -48,7 +53,9 @@ class ExportMetricTest extends TestCase
 
     public function testExportRouteSendsHeaderWithMimeType()
     {
-        config(['prometheus.storage' => 'memory']);
+        $response = $this->get('/metrics')->assertHeader('content-type');
+        // Header gets manipulated in Symfony\Component\HttpFoundation\Response::prepare
+        $this->assertStringContainsString(RenderTextFormat::MIME_TYPE, $response->headers->get('content-type'));
     }
 
 }
