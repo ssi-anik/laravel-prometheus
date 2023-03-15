@@ -2,6 +2,7 @@
 
 namespace Anik\Laravel\Prometheus\Test;
 
+use Closure;
 use Prometheus\RenderTextFormat;
 use Prometheus\Storage\InMemory;
 
@@ -19,6 +20,25 @@ class ExportMetricTest extends TestCase
         $app['config']->set(['prometheus.export.path' => '/prometheus-export-route']);
     }
 
+    public function changeExportRouteHttpMethod($app)
+    {
+        $app['config']->set(['prometheus.export.method' => 'POST']);
+    }
+
+    public function changeRouteGroupAttribute($app)
+    {
+        $app['config']->set([
+            'prometheus.export' => [
+                'attributes' => ['middleware' => '__test_middleware'],
+            ],
+        ]);
+    }
+
+    public function changeRouteName($app)
+    {
+        $app['config']->set(['prometheus.export.as' => 'export.prometheus.laravel']);
+    }
+
     public function testExportFunctionalityIsEnabledByDefault()
     {
         $this->assertTrue($this->app['router']->has('laravel.prometheus.export'));
@@ -30,13 +50,39 @@ class ExportMetricTest extends TestCase
         $this->assertFalse($this->app['router']->has('laravel.prometheus.export'));
     }
 
+    /** @define-env changeRouteName */
+    public function testExportRouteNameCanBeChanged()
+    {
+        $this->assertTrue($this->app['router']->has('export.prometheus.laravel'));
+    }
+
     /** @define-env changeExportRoutePath */
-    public function testExportPathCanBeChanged()
+    public function testExportRoutePathCanBeChanged()
     {
         $this->get('/prometheus-export-route')->assertStatus(200);
     }
 
-    public function testCanPassQueryParamToSelectStorageOnTheFly()
+    /** @define-env changeExportRouteHttpMethod */
+    public function testExportRouteHttpMethodCanBeChanged()
+    {
+        $this->post('/metrics')->assertStatus(200);
+    }
+
+    /** @define-env changeRouteGroupAttribute */
+    public function testExportRouteCanAddRouteGroupAttribute()
+    {
+        $this->app['router']->aliasMiddleware('__test_middleware', function ($request, Closure $next) {
+            if ($request->headers->get('X-CUSTOM-HEADER') !== '_PROM_TEST_') {
+                return abort(403);
+            }
+
+            return $next($request);
+        });
+
+        $this->get('/metrics', ['X-Custom-Header' => '_PROM_TEST_'])->assertStatus(200);
+    }
+
+    public function testExportRouteCanHaveQueryParamToSelectStorageOnTheFly()
     {
         // Default metrics is pushed whenever collector registry is instantiated
         $firstMock = $this->createMock(InMemory::class);
@@ -57,5 +103,4 @@ class ExportMetricTest extends TestCase
         // Header gets manipulated in Symfony\Component\HttpFoundation\Response::prepare
         $this->assertStringContainsString(RenderTextFormat::MIME_TYPE, $response->headers->get('content-type'));
     }
-
 }
