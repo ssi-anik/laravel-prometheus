@@ -15,6 +15,7 @@ abstract class Collector
     protected bool $isSaved = false;
     protected ?Adapter $adapter = null;
     protected ?string $storage = null;
+    protected bool $defaultMetrics = false;
 
     public function __construct(string $name)
     {
@@ -75,10 +76,30 @@ abstract class Collector
         return $this;
     }
 
+    /** @return static */
+    public function enableDefaultMetrics()
+    {
+        $this->defaultMetrics = true;
+
+        return $this;
+    }
+
+    /** @return static */
+    public function withDefaultMetrics()
+    {
+        return $this->enableDefaultMetrics();
+    }
+
+    public function defaultMetrics(): bool
+    {
+        return $this->defaultMetrics;
+    }
+
     public function getCollectorRegistry(): CollectorRegistry
     {
         return app()->make(CollectorRegistry::class, [
             'storageAdapter' => $this->getAdapter(),
+            'registerDefaultMetrics' => $this->defaultMetrics(),
         ]);
     }
 

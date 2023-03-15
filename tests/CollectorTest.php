@@ -119,4 +119,58 @@ class CollectorTest extends TestCase
 
         Summary::create('summary')->observe(2.2)->skip();
     }
+
+    public function testDefaultMetricsWillNotBeSavedByDefault()
+    {
+        $registryMock = $this->createMock(CollectorRegistry::class);
+        $registryMock->method('getOrRegisterCounter')
+                     ->willReturn($this->createMock(\Prometheus\Counter::class));
+        $registryMock->method('getOrRegisterGauge')
+                     ->willReturn($this->createMock(\Prometheus\Gauge::class));
+        $registryMock->method('getOrRegisterHistogram')
+                     ->willReturn($this->createMock(\Prometheus\Histogram::class));
+        $registryMock->method('getOrRegisterSummary')
+                     ->willReturn($this->createMock(\Prometheus\Summary::class));
+
+        $this->app->bind(CollectorRegistry::class, function ($app, $args) use ($registryMock) {
+            $this->assertFalse($args['registerDefaultMetrics'] ?? true);
+
+            return $registryMock;
+        });
+
+        Counter::create('counter')->increment();
+
+        Histogram::create('histogram')->observe(2.2);
+
+        Gauge::create('gauge')->set(2.2);
+
+        Summary::create('summary')->observe(2.2);
+    }
+
+    public function testDefaultMetricsCanBeSavedByCallingTheMethod()
+    {
+        $registryMock = $this->createMock(CollectorRegistry::class);
+        $registryMock->method('getOrRegisterCounter')
+                     ->willReturn($this->createMock(\Prometheus\Counter::class));
+        $registryMock->method('getOrRegisterGauge')
+                     ->willReturn($this->createMock(\Prometheus\Gauge::class));
+        $registryMock->method('getOrRegisterHistogram')
+                     ->willReturn($this->createMock(\Prometheus\Histogram::class));
+        $registryMock->method('getOrRegisterSummary')
+                     ->willReturn($this->createMock(\Prometheus\Summary::class));
+
+        $this->app->bind(CollectorRegistry::class, function ($app, $args) use ($registryMock) {
+            $this->assertTrue($args['registerDefaultMetrics'] ?? false);
+
+            return $registryMock;
+        });
+
+        Counter::create('counter')->increment()->withDefaultMetrics();
+
+        Histogram::create('histogram')->observe(2.2)->withDefaultMetrics();
+
+        Gauge::create('gauge')->set(2.2)->withDefaultMetrics();
+
+        Summary::create('summary')->observe(2.2)->enableDefaultMetrics();
+    }
 }
