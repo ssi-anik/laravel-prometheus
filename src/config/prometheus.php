@@ -79,10 +79,11 @@ return [
     'export' => [
         'enabled' => true,
         'method' => 'GET',
+        'as' => 'laravel.prometheus.export',
         'path' => env('PROMETHEUS_EXPORT_PATH', '/metrics'),
         /**
          * Add route group attributes
          */
-        'attributes' => []
+        'attributes' => [],
     ],
 ];

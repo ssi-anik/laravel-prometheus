@@ -40,7 +40,10 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
                 $route->addRoute(
                     $config['method'] ?? 'GET',
                     $config['path'] ?? '/metrics',
-                    ['as' => 'laravel.prometheus.export', 'uses' => MetricController::class]
+                    [
+                        'as' => $config['as'] ?? 'laravel.prometheus.export',
+                        'uses' => MetricController::class,
+                    ]
                 );
             });
     }
