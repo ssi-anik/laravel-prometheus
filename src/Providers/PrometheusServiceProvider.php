@@ -12,7 +12,7 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
     public function boot(): void
     {
         $this->publishAndMergeConfig();
-        $this->enableExportRoute();
+        $this->enableMetricsExportRoute();
     }
 
     protected function publishAndMergeConfig()
@@ -26,7 +26,7 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
         $this->mergeConfigFrom($path, 'prometheus');
     }
 
-    protected function enableExportRoute(): void
+    protected function enableMetricsExportRoute(): void
     {
         $config = config('prometheus.export');
 
