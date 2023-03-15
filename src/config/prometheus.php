@@ -25,7 +25,10 @@ return [
         /** Enable request response metrics */
         'enabled' => true,
 
-        /** URLs to ignore. Regex is allowed. */
+        /**
+         * actions or URLs to ignore.
+         * Regex is allowed.
+         */
         'ignore' => ['/metrics'],
 
         /** Rename metric labels */

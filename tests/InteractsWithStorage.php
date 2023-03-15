@@ -12,7 +12,12 @@ trait InteractsWithStorage
     {
         parent::setUp();
 
+        $this->afterSetUpHook();
         $this->configureMockStorageAdapter(self::$STORAGE_NAME);
+    }
+
+    protected function afterSetUpHook()
+    {
     }
 
     protected function configureMockStorageAdapter(string $bindingName = 'mock_adapter')

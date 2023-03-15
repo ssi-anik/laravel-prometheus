@@ -3,7 +3,9 @@
 namespace Anik\Laravel\Prometheus\Providers;
 
 use Anik\Laravel\Prometheus\Controllers\MetricController;
+use Anik\Laravel\Prometheus\Middlewares\PrometheusMiddleware;
 use Anik\Laravel\Prometheus\PrometheusManager;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,6 +15,7 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
     {
         $this->publishAndMergeConfig();
         $this->enableMetricsExportRoute();
+        $this->enableRequestResponseMetrics();
     }
 
     protected function publishAndMergeConfig()
@@ -48,6 +51,19 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
             });
     }
 
+    protected function enableRequestResponseMetrics(): void
+    {
+        $config = config('prometheus.request');
+
+        if (false === ($config['enabled'] ?? true)) {
+            return;
+        }
+
+        $this->app->singleton(PrometheusMiddleware::class, fn() => new PrometheusMiddleware());
+
+        $this->app[Kernel::class]->pushMiddleware(PrometheusMiddleware::class);
+    }
+
     public function register(): void
     {
         $this->registerManagers();
@@ -69,6 +85,7 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
         return [
             'prometheus',
             PrometheusManager::class,
+            PrometheusMiddleware::class,
         ];
     }
 }
