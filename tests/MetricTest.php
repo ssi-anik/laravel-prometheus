@@ -27,23 +27,18 @@ class MetricTest extends TestCase
                 [
                     'method' => 'histogram',
                     'expected' => Histogram::class,
-                    'required' => 'observe',
-                    'param' => 2.2,
                 ],
             ],
             'gauge' => [
                 [
                     'method' => 'gauge',
                     'expected' => Gauge::class,
-                    'required' => 'increment',
                 ],
             ],
             'summary' => [
                 [
                     'method' => 'summary',
                     'expected' => Summary::class,
-                    'required' => 'observe',
-                    'param' => 2.2,
                 ],
             ],
         ];
@@ -60,10 +55,7 @@ class MetricTest extends TestCase
         $metric = new Metric($adapter);
 
         $collector = $metric->$method('name');
-
-        if ($data['required'] ?? null) {
-            call_user_func_array([$collector, $data['required']], isset($data['param']) ? (array) $data['param'] : []);
-        }
+        $collector->skip();
 
         $this->assertInstanceOf($expected, $collector);
     }
@@ -77,10 +69,7 @@ class MetricTest extends TestCase
 
         $metric = new Metric($adapter, $namespace = '__NAMESPACE_');
         $collector = $metric->$method('name');
-
-        if ($data['required'] ?? null) {
-            call_user_func_array([$collector, $data['required']], isset($data['param']) ? (array) $data['param'] : []);
-        }
+        $collector->skip();
 
         $this->assertInstanceOf(InMemory::class, $collector->getAdapter());
         $this->assertSame($namespace, $collector->getNamespace());
