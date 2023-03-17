@@ -12,7 +12,7 @@ class LumenPrometheusServiceProvider extends PrometheusServiceProvider
     {
         parent::boot();
 
-        $this->app->bind(Request::class, fn($app, ...$args) => new LumenRequest(...$args));
+        $this->app->bind(Request::class, fn($app, $args) => new LumenRequest(...array_values($args)));
     }
 
     protected function addTerminableMiddlewareToRouter()
