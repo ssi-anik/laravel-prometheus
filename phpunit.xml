@@ -14,6 +14,10 @@
         <include>
             <directory suffix=".php">src</directory>
         </include>
+        <exclude>
+            <file>src/Providers/LumenPrometheusServiceProvider.php</file>
+            <file>src/Extractors/LumenRequest.php</file>
+        </exclude>
     </coverage>
     <testsuites>
         <testsuite name="tests">
