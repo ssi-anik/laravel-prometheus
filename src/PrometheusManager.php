@@ -3,7 +3,7 @@
 namespace Anik\Laravel\Prometheus;
 
 use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
-use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Container\Container;
 use Illuminate\Support\Str;
 use Prometheus\Storage\Adapter;
 use Prometheus\Storage\APC;
@@ -16,11 +16,11 @@ use Prometheus\Storage\Redis;
  */
 class PrometheusManager
 {
-    protected Application $app;
+    protected Container $app;
 
     protected array $adapters = [];
 
-    public function __construct(Application $app)
+    public function __construct(Container $app)
     {
         $this->app = $app;
     }
