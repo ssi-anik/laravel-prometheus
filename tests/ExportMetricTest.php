@@ -84,13 +84,12 @@ class ExportMetricTest extends TestCase
 
     public function testExportRouteCanHaveQueryParamToSelectStorageOnTheFly()
     {
-        // Default metrics is pushed whenever collector registry is instantiated
         $firstMock = $this->createMock(InMemory::class);
-        $firstMock->expects($this->atLeast(2))->method($this->anything());
+        $firstMock->expects($this->atLeast(1))->method($this->anything());
         $this->app->bind('_mock', fn() => $firstMock);
 
         $secondMock = $this->createMock(InMemory::class);
-        $secondMock->expects($this->atLeast(2))->method($this->anything());
+        $secondMock->expects($this->atLeast(1))->method($this->anything());
         $this->app->bind('_test', fn() => $secondMock);
 
         $this->get('/metrics?storage=_mock')->assertStatus(200);

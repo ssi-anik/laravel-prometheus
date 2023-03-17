@@ -12,7 +12,10 @@ class MetricController
     public function __invoke(Request $request)
     {
         $storage = $request->query('storage');
-        $registry = new CollectorRegistry(app()->make(PrometheusManager::class)->adapter($storage));
+        $registry = new CollectorRegistry(
+            app()->make(PrometheusManager::class)->adapter($storage),
+            false
+        );
 
         $renderer = new RenderTextFormat();
         $result = $renderer->render($registry->getMetricFamilySamples());
