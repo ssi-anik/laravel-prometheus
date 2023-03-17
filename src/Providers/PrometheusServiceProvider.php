@@ -37,6 +37,11 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
             return;
         }
 
+        $this->addExportRouteToRouter($config);
+    }
+
+    protected function addExportRouteToRouter($config)
+    {
         $this->app['router']->group(
             $config['attributes'] ?? [],
             function ($route) use ($config) {
@@ -61,6 +66,11 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
 
         $this->app->singleton(PrometheusMiddleware::class, fn() => new PrometheusMiddleware());
 
+        $this->addTerminableMiddlewareToRouter();
+    }
+
+    protected function addTerminableMiddlewareToRouter()
+    {
         $this->app[Kernel::class]->pushMiddleware(PrometheusMiddleware::class);
     }
 

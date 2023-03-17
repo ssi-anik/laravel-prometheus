@@ -26,10 +26,14 @@ return [
         'enabled' => true,
 
         /**
-         * actions or URLs to ignore.
-         * Regex is allowed.
+         * Paths to ignore
+         *
+         * Format:
+         * 'path' => '',
+         * 'path' => '*',
+         * 'path' => ['get', 'post', 'delete'],
          */
-        'ignore' => ['/metrics'],
+        'ignore' => ['metrics' => '*'],
 
         /** Rename metric labels */
         'naming' => [
@@ -37,8 +41,8 @@ return [
             'url' => 'url',
             'status' => 'status',
         ],
-        'count' => [
-            /** Enable count metric type */
+        'counter' => [
+            /** Enable counter metric type */
             'enabled' => true,
             'name' => env('PROMETHEUS_REQUEST_COUNT_NAME', 'request'),
         ],

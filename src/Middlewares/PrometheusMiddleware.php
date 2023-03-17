@@ -2,9 +2,12 @@
 
 namespace Anik\Laravel\Prometheus\Middlewares;
 
+use Anik\Laravel\Prometheus\Extractors\Request as RequestExtractor;
+use Anik\Laravel\Prometheus\Extractors\Response as ResponseExtractor;
+use Anik\Laravel\Prometheus\PrometheusManager;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Route;
+use Illuminate\Support\Arr;
 use Symfony\Component\HttpFoundation\Response;
 
 class PrometheusMiddleware
@@ -24,33 +27,57 @@ class PrometheusMiddleware
             return;
         }
 
-        $end = microtime(true);
-        $time = $end - $start;
-        $status = method_exists($response, 'getStatusCode') ? $response->getStatusCode() : 'N/A';
-        $identifier = $this->requestIdentifier($request);
-        dd($identifier);
+        $config = config('prometheus.request');
+        $ignores = $config['ignore'] ?? [];
 
-        app('log')->info(get_class(app()));
-    }
+        if (!empty($ignores)) {
+            foreach ($ignores as $path => $verb) {
+                if (!$request->is($path)) {
+                    continue;
+                }
 
-    protected function requestIdentifier($request)
-    {
-        $route = $request->route();
-        if ($route instanceof Route) {
-            $route = $route->getAction();
+                if ($verb === '' || $verb === '*') {
+                    return;
+                }
+
+                // Supports multiple verbs
+                foreach (Arr::wrap($verb) as $verb) {
+                    if ($request->isMethod($verb)) {
+                        return;
+                    }
+                }
+            }
         }
 
-        if ($as = $route['as'] ?? null) {
-            return $as;
+        $requestData = app(
+            $config['extractor']['request'] ?? RequestExtractor::class,
+            ['request' => $request, 'mapper' => $config['naming'] ?? []]
+        )->toArray();
+
+        $responseData = app(
+            $config['extractor']['response'] ?? ResponseExtractor::class,
+            ['response' => $response, 'mapper' => $config['naming'] ?? []]
+        )->toArray();
+
+        $data = array_merge($requestData, $responseData);
+
+        /** @var \Anik\Laravel\Prometheus\Metric $metric */
+        $metric = app(PrometheusManager::class)->metric();
+        if (($config['counter']['enabled'] ?? true) !== false) {
+            $metric->counter($config['counter']['name'] ?? 'request')
+                   ->labels($data)
+                   ->increment();
         }
 
-        $uses = $route['uses'] ?? null;
-        if (is_array($uses)) {
-            return sprintf('%s@%s', $uses[0] ?? '-', $uses[1] ?? '-');
-        } elseif (is_string($uses)) {
-            return $uses;
-        }
+        if (($config['histogram']['enabled'] ?? true) !== false) {
+            $time = microtime(true) - $start;
 
-        dd($request->path());
+            $histogram = $metric->histogram($config['histogram']['name'] ?? 'request_latency')
+                                ->labels($data)
+                                ->observe($time);
+            if (!empty($buckets = $config['histogram']['buckets'] ?? null)) {
+                $histogram->buckets($buckets);
+            }
+        }
     }
 }
