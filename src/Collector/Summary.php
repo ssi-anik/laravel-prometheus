@@ -4,7 +4,7 @@ namespace Anik\Laravel\Prometheus\Collector;
 
 use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
 
-final class Summary extends Collector
+class Summary extends Collector
 {
     protected ?float $value = null;
     protected int $maxAgeSeconds = 600;

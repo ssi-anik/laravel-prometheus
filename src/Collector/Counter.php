@@ -2,7 +2,7 @@
 
 namespace Anik\Laravel\Prometheus\Collector;
 
-final class Counter extends Collector
+class Counter extends Collector
 {
     /** @var int|float */
     protected $count = 1;

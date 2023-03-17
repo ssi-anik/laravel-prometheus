@@ -4,7 +4,7 @@ namespace Anik\Laravel\Prometheus\Collector;
 
 use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
 
-final class Gauge extends Collector
+class Gauge extends Collector
 {
     private static int $SET = 1;
     private static int $INCREMENT = 2;

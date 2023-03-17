@@ -4,7 +4,7 @@ namespace Anik\Laravel\Prometheus\Collector;
 
 use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
 
-final class Histogram extends Collector
+class Histogram extends Collector
 {
     protected ?float $value = null;
     protected ?array $buckets = null;
