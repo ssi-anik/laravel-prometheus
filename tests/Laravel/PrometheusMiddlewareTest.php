@@ -482,9 +482,9 @@ class PrometheusMiddlewareTest extends TestCase
         $this->startTime();
         config(['prometheus.request.extractor.response' => '_extractor.response']);
 
-        $request = $this->createMock(\Anik\Laravel\Prometheus\Extractors\Response::class);
-        $request->expects($this->once())->method('toArray');
-        $this->app->bind('_extractor.response', fn() => $request);
+        $response = $this->createMock(\Anik\Laravel\Prometheus\Extractors\Response::class);
+        $response->expects($this->once())->method('toArray');
+        $this->app->bind('_extractor.response', fn() => $response);
 
         $this->addRoute('/homepage');
         $this->get('/homepage')->assertSuccessful();
