@@ -7,34 +7,11 @@ use Anik\Laravel\Prometheus\Collector\Histogram;
 use Anik\Laravel\Prometheus\Metric;
 use Anik\Laravel\Prometheus\Middlewares\PrometheusMiddleware;
 use Anik\Laravel\Prometheus\PrometheusManager;
+use Closure;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Prometheus\CollectorRegistry;
-
-class DummyController
-{
-    public function success(Request $request): JsonResponse
-    {
-        $code = $request->get('code', 200);
-
-        return response()->json(['success' => true], $code);
-    }
-
-    public function error(Request $request): JsonResponse
-    {
-        $code = $request->get('code', 400);
-
-        return response()->json(['success' => false], $code);
-    }
-
-    public function __invoke(Request $request): JsonResponse
-    {
-        $code = $request->get('code', 200);
-
-        return response()->json(['success' => $code >= 200 && $code < 400], $code);
-    }
-}
 
 class PrometheusMiddlewareTest extends TestCase
 {
@@ -45,19 +22,21 @@ class PrometheusMiddlewareTest extends TestCase
         $app['config']->set(['prometheus.request.enabled' => false]);
     }
 
-    public function addRoute(string $url, string $method = 'GET', $attributes = [])
+    protected function getRouteHandler(): Closure
     {
-        $method = strtolower($method);
-        $handler = function (Request $request): JsonResponse {
+        return function (Request $request): JsonResponse {
             $code = $request->get('code', 200);
 
             return response()->json(['success' => $code >= 200 && $code < 400], $code);
         };
+    }
+
+    public function addRoute(string $url, string $method = 'GET', $attributes = [])
+    {
+        $method = strtolower($method);
 
         if (empty($attributes)) {
-            $attributes = $handler;
-        } elseif (is_array($attributes) && empty($attributes['uses'])) {
-            $attributes['uses'] = $handler;
+            $attributes = $this->getRouteHandler();
         }
 
         $this->app['router']->$method($url, $attributes);
