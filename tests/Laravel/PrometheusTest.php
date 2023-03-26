@@ -1,6 +1,6 @@
 <?php
 
-namespace Anik\Laravel\Prometheus\Test;
+namespace Anik\Laravel\Prometheus\Test\Laravel;
 
 use Anik\Laravel\Prometheus\Facades\Prometheus;
 use Anik\Laravel\Prometheus\Metric;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Anik\Laravel\Prometheus\Test;
+namespace Anik\Laravel\Prometheus\Test\Laravel;
 
 use Anik\Laravel\Prometheus\Collector\Counter;
 use Anik\Laravel\Prometheus\Collector\Histogram;
@@ -87,7 +87,7 @@ class PrometheusMiddlewareTest extends TestCase
         $this->assertTrue(method_exists(PrometheusMiddleware::class, 'terminate'));
     }
 
-    public function testRequestMetricInNeverStoredIfConstantIsNotDefined()
+    public function testRequestMetricIsNeverStoredIfConstantIsNotDefined()
     {
         // Constant is not set, so terminate method will just return without calling metrics save
         $mock = $this->createMock(CollectorRegistry::class);

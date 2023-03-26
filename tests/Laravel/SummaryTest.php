@@ -1,12 +1,12 @@
 <?php
 
-namespace Anik\Laravel\Prometheus\Test;
+namespace Anik\Laravel\Prometheus\Test\Laravel;
 
-use Anik\Laravel\Prometheus\Collector\Histogram;
+use Anik\Laravel\Prometheus\Collector\Summary;
 use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
 use Prometheus\CollectorRegistry;
 
-class HistogramTest extends TestCase
+class SummaryTest extends TestCase
 {
     public static function namespaceDataProvider(): array
     {
@@ -27,14 +27,14 @@ class HistogramTest extends TestCase
     {
         $registryMock = $this->createMock(CollectorRegistry::class);
         $registryMock->expects($this->once())
-                     ->method('getOrRegisterHistogram')
+                     ->method('getOrRegisterSummary')
                      ->with($this->identicalTo($expected))
-                     ->willReturn($this->createMock(\Prometheus\Histogram::class));
+                     ->willReturn($this->createMock(\Prometheus\Summary::class));
 
         $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
-        $histogram = Histogram::create('name')->observe(2.2);
+        $summary = Summary::create('name')->observe(2.2);
         if ($namespace) {
-            $histogram->setNamespace($namespace);
+            $summary->setNamespace($namespace);
         }
     }
 
@@ -42,12 +42,12 @@ class HistogramTest extends TestCase
     {
         $registryMock = $this->createMock(CollectorRegistry::class);
         $registryMock->expects($this->once())
-                     ->method('getOrRegisterHistogram')
+                     ->method('getOrRegisterSummary')
                      ->with($this->anything(), $this->identicalTo('__NAME__'))
-                     ->willReturn($this->createMock(\Prometheus\Histogram::class));
+                     ->willReturn($this->createMock(\Prometheus\Summary::class));
 
         $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
-        Histogram::create('__NAME__')->observe(2.2);
+        Summary::create('__NAME__')->observe(2.2);
     }
 
     public static function helpTextDataProvider(): array
@@ -69,14 +69,14 @@ class HistogramTest extends TestCase
     {
         $registryMock = $this->createMock(CollectorRegistry::class);
         $registryMock->expects($this->once())
-                     ->method('getOrRegisterHistogram')
+                     ->method('getOrRegisterSummary')
                      ->with($this->anything(), $this->anything(), $this->identicalTo($expected))
-                     ->willReturn($this->createMock(\Prometheus\Histogram::class));
+                     ->willReturn($this->createMock(\Prometheus\Summary::class));
 
         $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
-        $histogram = Histogram::create('__NAME__')->observe(2.2);
+        $summary = Summary::create('__NAME__')->observe(2.2);
         if ($text) {
-            $histogram->setHelpText($text);
+            $summary->setHelpText($text);
         }
     }
 
@@ -112,86 +112,107 @@ class HistogramTest extends TestCase
         $names = array_keys($data['labels'] ?? []);
         $values = array_values($data['labels'] ?? []);
 
-        $histogramMock = $this->createMock(\Prometheus\Histogram::class);
-        $histogramMock->expects($this->once())->method('observe')->with($this->anything(), $this->identicalTo($values));
+        $summaryMock = $this->createMock(\Prometheus\Summary::class);
+        $summaryMock->expects($this->once())->method('observe')->with($this->anything(), $this->identicalTo($values));
 
         $registryMock = $this->createMock(CollectorRegistry::class);
         $registryMock->expects($this->once())
-                     ->method('getOrRegisterHistogram')
+                     ->method('getOrRegisterSummary')
                      ->with($this->anything(), $this->anything(), $this->anything(), $this->identicalTo($names))
-                     ->willReturn($histogramMock);
+                     ->willReturn($summaryMock);
 
         $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
 
-        $histogram = Histogram::create('my_histogram')->observe(2.2);
+        $summary = Summary::create('my_summary')->observe(2.2);
         if (isset($data['labels'])) {
-            $histogram->labels($data['labels']);
+            $summary->labels($data['labels']);
         }
     }
 
     public function testLabelNameAndValueCanBeSetUsingLabelMethod()
     {
-        $histogramMock = $this->createMock(\Prometheus\Histogram::class);
-        $histogramMock->expects($this->once())->method('observe')
-                      ->with($this->anything(), $this->identicalTo([200, '/metrics']));
+        $summaryMock = $this->createMock(\Prometheus\Summary::class);
+        $summaryMock->expects($this->once())->method('observe')
+                    ->with($this->anything(), $this->identicalTo([200, '/metrics']));
 
         $registryMock = $this->createMock(CollectorRegistry::class);
         $registryMock->expects($this->once())
-                     ->method('getOrRegisterHistogram')
+                     ->method('getOrRegisterSummary')
                      ->with(
                          $this->anything(),
                          $this->anything(),
                          $this->anything(),
                          $this->identicalTo(['code', 'url'])
                      )
-                     ->willReturn($histogramMock);
+                     ->willReturn($summaryMock);
 
         $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
 
-        Histogram::create('my_histogram')->label('code', 200)->label('url', '/metrics')->observe(2.2);
+        Summary::create('my_summary')->label('code', 200)->label('url', '/metrics')->observe(2.2);
     }
 
-    public static function bucketDataProvider(): array
+    public function testMaxAgeSeconds()
+    {
+        $registryMock = $this->createMock(CollectorRegistry::class);
+        $registryMock->expects($this->once())
+                     ->method('getOrRegisterSummary')
+                     ->with(
+                         $this->anything(),
+                         $this->anything(),
+                         $this->anything(),
+                         $this->anything(),
+                         $this->identicalTo(300),
+                         $this->anything()
+                     )
+                     ->willReturn($this->createMock(\Prometheus\Summary::class));
+
+        $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
+
+        Summary::create('my_summary')->maxAgeSeconds(300)->observe(2.2);
+    }
+
+    public static function quantilesDataProvider(): array
     {
         return [
-            'bucket is not set' => [
-                'buckets' => null,
+            'quantiles is not set' => [
+                'quantiles' => null,
                 'expected' => null,
             ],
             'list of values is set' => [
-                'buckets' => [1, 2, 3, 4],
+                'quantiles' => [1, 2, 3, 4],
                 'expected' => [1, 2, 3, 4],
             ],
         ];
     }
 
-    /** @dataProvider bucketDataProvider */
-    public function testBuckets(?array $buckets, ?array $expected)
+    /** @dataProvider quantilesDataProvider */
+    public function testQuantiles(?array $quantiles, ?array $expected)
     {
         $registryMock = $this->createMock(CollectorRegistry::class);
         $registryMock->expects($this->once())
-                     ->method('getOrRegisterHistogram')
+                     ->method('getOrRegisterSummary')
                      ->with(
+                         $this->anything(),
                          $this->anything(),
                          $this->anything(),
                          $this->anything(),
                          $this->anything(),
                          $this->identicalTo($expected)
                      )
-                     ->willReturn($this->createMock(\Prometheus\Histogram::class));
+                     ->willReturn($this->createMock(\Prometheus\Summary::class));
 
         $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
 
-        $histogram = Histogram::create('my_histogram')->observe(2.2);
-        if (isset($buckets)) {
-            $histogram->buckets($buckets);
+        $summary = Summary::create('my_summary')->observe(2.2);
+        if (isset($quantiles)) {
+            $summary->quantiles($quantiles);
         }
     }
 
     public static function observeMethodDataProvider(): array
     {
         /**
-         * Histogram::observe expects float
+         * Summary::observe expects float
          */
         return [
             'called with parameter 0' => [
@@ -218,37 +239,37 @@ class HistogramTest extends TestCase
     /** @dataProvider observeMethodDataProvider */
     public function testObserveMethod(array $data)
     {
-        $histogramMock = $this->createMock(\Prometheus\Histogram::class);
-        $histogramMock->expects($this->once())->method('observe')->with($this->identicalTo($data['expected']));
+        $summaryMock = $this->createMock(\Prometheus\Summary::class);
+        $summaryMock->expects($this->once())->method('observe')->with($this->identicalTo($data['expected']));
 
         $registryMock = $this->createMock(CollectorRegistry::class);
         $registryMock->expects($this->once())
-                     ->method('getOrRegisterHistogram')
-                     ->willReturn($histogramMock);
+                     ->method('getOrRegisterSummary')
+                     ->willReturn($summaryMock);
 
         $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
 
-        Histogram::create('my_histogram')->observe($data['value']);
+        Summary::create('my_summary')->observe($data['value']);
     }
 
-    public function testHistogramExpectsObservationMethodToBeCalledExplicitly()
+    public function testSummaryExpectsObservationMethodToBeCalledExplicitly()
     {
         $this->expectException(PrometheusException::class);
-        Histogram::create('my_histogram');
+        Summary::create('my_summary');
     }
 
     public function testDataIsSavedAutomatically()
     {
-        $histogramMock = $this->createMock(\Prometheus\Histogram::class);
-        $histogramMock->expects($this->once())->method('observe');
+        $summaryMock = $this->createMock(\Prometheus\Summary::class);
+        $summaryMock->expects($this->once())->method('observe');
 
         $registryMock = $this->createMock(CollectorRegistry::class);
         $registryMock->expects($this->once())
-                     ->method('getOrRegisterHistogram')
-                     ->willReturn($histogramMock);
+                     ->method('getOrRegisterSummary')
+                     ->willReturn($summaryMock);
 
         $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
 
-        Histogram::create('name')->observe(2.2);
+        Summary::create('name')->observe(2.2);
     }
 }

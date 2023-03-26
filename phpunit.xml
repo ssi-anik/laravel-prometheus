@@ -20,8 +20,8 @@
         </exclude>
     </coverage>
     <testsuites>
-        <testsuite name="tests">
-            <directory>tests</directory>
+        <testsuite name="laravel">
+            <directory>tests/Laravel</directory>
         </testsuite>
     </testsuites>
     <php>

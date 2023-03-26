@@ -1,6 +1,6 @@
 <?php
 
-namespace Anik\Laravel\Prometheus\Test;
+namespace Anik\Laravel\Prometheus\Test\Laravel;
 
 use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
 use Anik\Laravel\Prometheus\PrometheusManager;
