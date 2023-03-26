@@ -25,15 +25,27 @@ return [
         /** Enable request response metrics */
         'enabled' => true,
 
-        /**
-         * Paths to ignore
-         *
-         * Format:
-         * 'path' => '',
-         * 'path' => '*',
-         * 'path' => ['get', 'post', 'delete'],
-         */
-        'ignore' => ['metrics' => '*'],
+        /** Ignore incoming HTTP requests */
+        'ignore' => [
+            /** Ignore HTTP Method: "OPTIONS" by default. */
+            'methods' => 'OPTIONS',
+
+            /**
+             * Ignore HTTP Requests for matching paths
+             *
+             * Format:
+             *
+             * 'path/to/match' => 'HTTP_METHOD/VERB'
+             *
+             * Examples:
+             *     'path' => '',
+             *     'path' => '*',
+             *     'path' => ['get', 'post', 'delete'],
+             */
+            'paths' => [
+                'metrics' => '*',
+            ],
+        ],
 
         /** Rename metric labels */
         'naming' => [

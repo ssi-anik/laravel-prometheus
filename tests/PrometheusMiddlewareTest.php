@@ -63,16 +63,16 @@ class PrometheusMiddlewareTest extends TestCase
         $this->app['router']->$method($url, $attributes);
     }
 
-    public function testRequestMetricsIsEnabledByDefault()
-    {
-        $this->assertTrue($this->app[Kernel::class]->hasMiddleware(PrometheusMiddleware::class));
-    }
-
     protected function startTime()
     {
         if (!defined('LARAVEL_START')) {
             define('LARAVEL_START', microtime(true));
         }
+    }
+
+    public function testRequestMetricsIsEnabledByDefault()
+    {
+        $this->assertTrue($this->app[Kernel::class]->hasMiddleware(PrometheusMiddleware::class));
     }
 
     /** @define-env disableRequestMetrics */
@@ -116,7 +116,7 @@ class PrometheusMiddlewareTest extends TestCase
         $this->get('/homepage')->assertSuccessful();
     }
 
-    public static function requestMetricTypesToggleDataProvider(): array
+    public static function toggleRequestMetricTypesDataProvider(): array
     {
         return [
             'both counter & histogram is enabled by default' => [
@@ -160,7 +160,7 @@ class PrometheusMiddlewareTest extends TestCase
         ];
     }
 
-    /** @dataProvider requestMetricTypesToggleDataProvider */
+    /** @dataProvider toggleRequestMetricTypesDataProvider */
     public function testRequestMetricTypesCanBeToggledFromConfig(array $rules)
     {
         $this->startTime();
@@ -180,10 +180,87 @@ class PrometheusMiddlewareTest extends TestCase
         $this->get('/homepage')->assertSuccessful();
     }
 
+    public static function ignoreMethodsDataProvider(): array
+    {
+        return [
+            'nothing is added to ignore methods config' => [
+                [
+                    'routes' => [
+                        ['OPTIONS', '/path/to/ignore/1'],
+                    ],
+                    'expects' => [
+                        'getOrRegisterCounter' => 0,
+                        'getOrRegisterHistogram' => 0,
+                    ],
+                ],
+            ],
+            'GET and OPTIONS HTTP verb is added to config' => [
+                [
+                    'config' => [
+                        'prometheus.request.ignore.methods' => ['OPTIONS', 'GET'],
+                    ],
+                    'routes' => [
+                        ['GET', '/path/to/ignore/1'],
+                        ['POST', '/path/to/ignore/1'],
+                        ['OPTIONS', '/path/to/ignore/1'],
+                        ['OPTIONS', '/path/to/ignore/1'],
+                        ['GET', '/path/to/ignore/2'],
+                        ['POST', '/path/to/ignore/2'],
+                    ],
+                    'expects' => [
+                        'getOrRegisterCounter' => 2,
+                        'getOrRegisterHistogram' => 2,
+                    ],
+                ],
+            ],
+            'only POST HTTP verb is added to config replacing OPTIONS' => [
+                [
+                    'config' => [
+                        'prometheus.request.ignore.methods' => ['POST'],
+                    ],
+                    'routes' => [
+                        ['GET', '/path/to/ignore/1'],
+                        ['POST', '/path/to/ignore/1'],
+                        ['OPTIONS', '/path/to/ignore/1'],
+                        ['OPTIONS', '/path/to/ignore/1'],
+                        ['GET', '/path/to/ignore/2'],
+                        ['POST', '/path/to/ignore/2'],
+                    ],
+                    'expects' => [
+                        'getOrRegisterCounter' => 4,
+                        'getOrRegisterHistogram' => 4,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /** @dataProvider ignoreMethodsDataProvider */
+    public function testRequestMetricsWillBeSkippedIfHttpMethodsMatchDataInIgnoreArray(array $rules)
+    {
+        $this->startTime();
+
+        foreach ($rules['config'] ?? [] as $key => $value) {
+            config([$key => $value]);
+        }
+
+        $registryMock = $this->createMock(CollectorRegistry::class);
+        $this->app->bind(CollectorRegistry::class, fn() => $registryMock);
+
+        foreach ($rules['expects'] ?? [] as $method => $times) {
+            $registryMock->expects($this->exactly($times))->method($method);
+        }
+
+        foreach ($rules['routes'] ?? [] as $route) {
+            $this->addRoute($route[1], $verb = strtoupper($route[0]));
+            $this->{$verb}($route[1])->assertSuccessful();
+        }
+    }
+
     public static function ignorePathsDataProvider(): array
     {
         return [
-            'nothing is added to ignore config' => [
+            'nothing is added to ignore paths config' => [
                 [
                     'routes' => [
                         ['GET', '/path/to/ignore/1'],
@@ -196,10 +273,10 @@ class PrometheusMiddlewareTest extends TestCase
                     ],
                 ],
             ],
-            'empty verb' => [
+            'paths with empty http verb' => [
                 [
                     'config' => [
-                        'prometheus.request.ignore' => [
+                        'prometheus.request.ignore.paths' => [
                             'path/to/ignore/1' => '',
                         ],
                     ],
@@ -215,10 +292,10 @@ class PrometheusMiddlewareTest extends TestCase
                     ],
                 ],
             ],
-            'specific verb' => [
+            'paths with specific http verb' => [
                 [
                     'config' => [
-                        'prometheus.request.ignore' => [
+                        'prometheus.request.ignore.paths' => [
                             'path/to/ignore/1' => 'GET',
                         ],
                     ],
@@ -233,10 +310,10 @@ class PrometheusMiddlewareTest extends TestCase
                     ],
                 ],
             ],
-            'multiple verbs' => [
+            'paths with multiple http verbs' => [
                 [
                     'config' => [
-                        'prometheus.request.ignore' => [
+                        'prometheus.request.ignore.paths' => [
                             'path/to/ignore/1' => ['GET', 'POST'],
                         ],
                     ],
@@ -256,7 +333,7 @@ class PrometheusMiddlewareTest extends TestCase
             'path with regex' => [
                 [
                     'config' => [
-                        'prometheus.request.ignore' => [
+                        'prometheus.request.ignore.paths' => [
                             'path/to/*' => '',
                         ],
                     ],
@@ -281,7 +358,7 @@ class PrometheusMiddlewareTest extends TestCase
     }
 
     /** @dataProvider ignorePathsDataProvider */
-    public function testRequestMetricWillBeSkippedIfEndpointMatchesDataInIgnoreArrayInConfig(array $rules)
+    public function testRequestMetricsWillBeSkippedIfPathsMatchDataInIgnoreArray(array $rules)
     {
         $this->startTime();
 

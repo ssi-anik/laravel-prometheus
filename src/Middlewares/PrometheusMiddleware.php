@@ -28,21 +28,27 @@ class PrometheusMiddleware
         }
 
         $config = config('prometheus.request');
-        $ignores = $config['ignore'] ?? [];
+        if ($methods = $config['ignore']['methods'] ?? []) {
+            foreach (Arr::wrap($methods) as $method) {
+                if ($request->isMethod($method)) {
+                    return;
+                }
+            }
+        }
 
-        if (!empty($ignores)) {
-            foreach ($ignores as $path => $verb) {
+        if ($paths = $config['ignore']['paths'] ?? []) {
+            foreach ($paths as $path => $method) {
                 if (!$request->is($path)) {
                     continue;
                 }
 
-                if ($verb === '' || $verb === '*') {
+                if ($method === '' || $method === '*') {
                     return;
                 }
 
                 // Supports multiple verbs
-                foreach (Arr::wrap($verb) as $verb) {
-                    if ($request->isMethod($verb)) {
+                foreach (Arr::wrap($method) as $method) {
+                    if ($request->isMethod($method)) {
                         return;
                     }
                 }
