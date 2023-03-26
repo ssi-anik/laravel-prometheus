@@ -27,8 +27,7 @@ jobs:
   #        run: |
   #          `composer global config bin-dir --absolute --quiet`/phpcs --standard=PSR12 --ignore="src/Facades/*" ./src
 
-
-  tests:
+  tests-laravel:
     #needs: coding-standard
     name: "PHP: ${{ matrix.php }} | Laravel: ${{ matrix.laravel }}"
     runs-on: ubuntu-latest
@@ -76,13 +75,74 @@ jobs:
       - name: Run tests
         run: |
           if [[ ${{ matrix.laravel }} -lt 10 ]]; then
-            ./vendor/bin/phpunit --configuration phpunit9.xml --testdox
+            ./vendor/bin/phpunit --configuration phpunit9.xml --testdox --testsuite laravel
           else
-            ./vendor/bin/phpunit --configuration phpunit.xml --testdox
+            ./vendor/bin/phpunit --configuration phpunit.xml --testdox --testsuite laravel
           fi
 
+
+  tests-lumen:
+    #needs: coding-standard
+    name: "PHP: ${{ matrix.php }} | Lumen: ${{ matrix.lumen }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ 7.4, 8.0, 8.1, 8.2 ]
+        lumen: [ 6, 7, 8, 9, 10 ]
+        exclude:
+          - php: 8.0
+            lumen: 6
+          - php: 8.1
+            lumen: 6
+          - php: 8.2
+            lumen: 6
+
+          - php: 8.0
+            lumen: 7
+          - php: 8.1
+            lumen: 7
+          - php: 8.2
+            lumen: 7
+
+          - php: 7.4
+            lumen: 9
+
+          - php: 7.4
+            lumen: 10
+          - php: 8.0
+            lumen: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: redis,apcu
+          ini-values: apc.enable_cli=1
+
+      - name: Install dependencies
+        run: |
+          composer remove --dev orchestra/testbench --no-interaction
+          composer require illuminate/support:^${{ matrix.lumen }} --no-interaction --prefer-dist
+          composer require --dev anik/testbench-lumen:^2.0 --no-interaction --prefer-dist
+
+      # lumen < 10 uses PHPUnit ^8.x|^9.x
+      - name: Run tests
+        run: |
+          if [[ ${{ matrix.lumen }} -lt 10 ]]; then
+            ./vendor/bin/phpunit --configuration phpunit9.xml --testdox --testsuite lumen
+          else
+            ./vendor/bin/phpunit --configuration phpunit.xml --testdox --testsuite lumen
+          fi
+
+
 #  coverage:
-#    needs: tests
+#    needs: [tests-laravel, tests-lumen]
 #    name: Coverage
 #    if: github.ref != 'refs/heads/dev'
 #    runs-on: ubuntu-latest
