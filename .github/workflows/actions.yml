@@ -127,7 +127,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer remove --dev orchestra/testbench --no-interaction
+          composer remove --dev orchestra/testbench --with-all-dependencies --no-interaction
           composer require illuminate/support:^${{ matrix.lumen }} --no-interaction --prefer-dist
           composer require --dev anik/testbench-lumen:^2.0 --no-interaction --prefer-dist
 
