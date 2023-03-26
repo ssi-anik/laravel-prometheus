@@ -22,6 +22,9 @@
         <testsuite name="laravel">
             <directory>tests/Laravel</directory>
         </testsuite>
+        <testsuite name="lumen">
+            <directory>tests/Lumen</directory>
+        </testsuite>
     </testsuites>
     <php>
         <env name="APP_KEY" value="YapqzFA247Arhh9WwKbANgRWH1rZ2cwclVWwlEsW41Q"/>
