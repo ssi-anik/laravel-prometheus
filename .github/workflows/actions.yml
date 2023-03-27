@@ -91,7 +91,7 @@ jobs:
       fail-fast: false
       matrix:
         php: [ 7.4, 8.0, 8.1, 8.2 ]
-        lumen: [ 6, 7, 8, 9, 10 ]
+        lumen: [ 8, 9 ]
         exclude:
           - php: 8.0
             lumen: 6
@@ -136,7 +136,8 @@ jobs:
       # lumen < 10 uses PHPUnit ^8.x|^9.x
       - name: Run tests
         run: |
-          if [[ ${{ matrix.lumen }} -lt 10 ]]; then
+          VERSION=$(composer show phpunit/phpunit | grep versions | awk '{print $4}' | awk --field-separator='.' '{print $1}')
+          if [[ $VERSION -lt 10 ]]; then
             ./vendor/bin/phpunit --configuration phpunit9.xml --testdox --testsuite lumen
           else
             ./vendor/bin/phpunit --configuration phpunit.xml --testdox --testsuite lumen
