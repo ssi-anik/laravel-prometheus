@@ -8,6 +8,7 @@ use Anik\Laravel\Prometheus\PrometheusManager;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class PrometheusServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -22,7 +23,7 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
     {
         $path = realpath(__DIR__ . '/../config/prometheus.php');
 
-        if ($this->app->runningInConsole()) {
+        if ($this->app->runningInConsole() && !Str::contains($this->app->version(), 'Lumen')) {
             $this->publishes([$path => config_path('prometheus.php'),]);
         }
 
