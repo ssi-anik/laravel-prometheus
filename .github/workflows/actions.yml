@@ -131,13 +131,11 @@ jobs:
           composer remove --dev orchestra/testbench --with-all-dependencies --no-interaction
           composer require illuminate/support:^${{ matrix.lumen }} --with-all-dependencies --no-interaction --prefer-dist
           composer require anik/testbench-lumen:^2 --with-all-dependencies --no-interaction --prefer-dist
-          # PHPUnit 10.x will cause issue with Lumen TestCase
+          # PHPUnit 10.x for Lumen ^8/^9 causes issue for extending "final" methods
           if [[ ${{ matrix.lumen }} -le 7 ]]; then
-            composer remove --dev phpunit/phpunit --with-all-dependencies --no-interaction
-            composer require --dev phpunit/phpunit:^8 --with-all-dependencies --no-interaction
+            composer require --dev phpunit/phpunit:^8 --with-all-dependencies --no-interaction --prefer-dist
           elif [[ ${{ matrix.lumen }} -le 9 ]]; then
-            composer remove --dev phpunit/phpunit --with-all-dependencies --no-interaction
-            composer require --dev phpunit/phpunit:^9 --with-all-dependencies --no-interaction
+            composer require --dev phpunit/phpunit:^9 --with-all-dependencies --no-interaction --prefer-dist
           fi
 
       # lumen < 10 uses PHPUnit ^8.x|^9.x
