@@ -57,12 +57,12 @@ class PrometheusMiddleware
 
         $requestData = app(
             $config['extractor']['request'] ?? RequestExtractor::class,
-            ['request' => $request, 'mapper' => $config['naming'] ?? []]
+            ['request' => $request, 'naming' => $config['naming']]
         )->toArray();
 
         $responseData = app(
             $config['extractor']['response'] ?? ResponseExtractor::class,
-            ['response' => $response, 'mapper' => $config['naming'] ?? []]
+            ['response' => $response, 'naming' => $config['naming']]
         )->toArray();
 
         $data = array_merge($requestData, $responseData);

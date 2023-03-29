@@ -8,18 +8,18 @@ class Response implements Arrayable
 {
     /** @var \Symfony\Component\HttpFoundation\Response | \Illuminate\Http\Response $response */
     protected $response;
-    protected array $mapper;
+    protected array $naming;
 
-    public function __construct($response, array $mapper = [])
+    public function __construct($response, array $naming = [])
     {
         $this->response = $response;
-        $this->mapper = $mapper;
+        $this->naming = $naming;
     }
 
     public function toArray(): array
     {
         return [
-            ($this->mapper['status'] ?? 'status') => $this->response->getStatusCode(),
+            ($this->naming['status'] ?? 'status') => $this->response->getStatusCode(),
         ];
     }
 }

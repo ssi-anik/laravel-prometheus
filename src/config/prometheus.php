@@ -56,7 +56,7 @@ return [
         'counter' => [
             /** Enable counter metric type */
             'enabled' => true,
-            'name' => env('PROMETHEUS_REQUEST_COUNT_NAME', 'request'),
+            'name' => env('PROMETHEUS_REQUEST_COUNTER_NAME', 'request'),
         ],
         'histogram' => [
             /** Enable histogram metric type */
