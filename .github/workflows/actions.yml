@@ -128,10 +128,13 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # Remove orchestra testbench
           composer remove --dev orchestra/testbench --with-all-dependencies --no-interaction
+          # Install Illuminate support to force download specific version
           composer require illuminate/support:^${{ matrix.lumen }} --with-all-dependencies --no-interaction --prefer-dist
+          # Require Lumen testing package
           composer require anik/testbench-lumen:^2 --with-all-dependencies --no-interaction --prefer-dist
-          # PHPUnit 10.x for Lumen ^8/^9 causes issue for extending "final" methods
+          # Downgrade phpunit version from 10.x as Lumen ^8/^9 causes issue for extending "final" methods
           if [[ ${{ matrix.lumen }} -le 7 ]]; then
             composer require --dev phpunit/phpunit:^8 --with-all-dependencies --no-interaction --prefer-dist
           elif [[ ${{ matrix.lumen }} -le 9 ]]; then
@@ -141,6 +144,7 @@ jobs:
       # lumen < 10 uses PHPUnit ^8.x|^9.x
       - name: Run tests
         run: |
+          # Use phpunit config suitable for versions. Will throw [warning] otherwise.
           VERSION=$(composer show phpunit/phpunit | grep versions | awk '{print $4}' | awk --field-separator='.' '{print $1}')
           if [[ $VERSION -lt 10 ]]; then
             ./vendor/bin/phpunit --configuration phpunit9.xml --testdox --testsuite lumen
