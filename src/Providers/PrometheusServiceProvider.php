@@ -3,10 +3,12 @@
 namespace Anik\Laravel\Prometheus\Providers;
 
 use Anik\Laravel\Prometheus\Controllers\MetricController;
+use Anik\Laravel\Prometheus\Listeners\ResponseReceivedListener;
 use Anik\Laravel\Prometheus\Middlewares\PrometheusMiddleware;
 use Anik\Laravel\Prometheus\PrometheusManager;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
@@ -17,6 +19,7 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
         $this->publishAndMergeConfig();
         $this->enableMetricsExportRoute();
         $this->enableRequestResponseMetrics();
+        $this->enableHttpMetrics();
     }
 
     protected function publishAndMergeConfig()
@@ -68,6 +71,17 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
         $this->app->singleton(PrometheusMiddleware::class, fn() => new PrometheusMiddleware());
 
         $this->addTerminableMiddlewareToRouter();
+    }
+
+    protected function enableHttpMetrics(): void
+    {
+        $config = config('prometheus.http');
+
+        if (!($config['enabled'] ?? false) || !$this->app->bound('events')) {
+            return;
+        }
+
+        $this->app['events']->listen(ResponseReceived::class, ResponseReceivedListener::class);
     }
 
     protected function addTerminableMiddlewareToRouter()

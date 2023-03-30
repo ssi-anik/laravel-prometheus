@@ -95,6 +95,44 @@ return [
             'buckets' => [0.05, 0.1, 0.2, 0.5, 1, 1.5,],
         ],
     ],
+    'http' => [
+        /** Enable remote service request response metrics */
+        'enabled' => true,
+
+        /** Stores data after response is sent */
+        'after_response' => false,
+
+        /**
+         * Ignore HTTP requests
+         * Example:
+         *      # Ignores paths for the matching hosts
+         *      "host" => ['/path1', '/path/2', '*']
+         *      # Ignore all paths for the matching host
+         *      "host" => [],
+         */
+        'ignore' => [],
+
+        /** Rename metric labels */
+        'naming' => [
+            'scheme' => 'scheme',
+            'host' => 'host',
+            'path' => 'path',
+            'method' => 'method',
+            'status' => 'status',
+        ],
+        'counter' => [
+            /** Enable counter metric type */
+            'enabled' => true,
+            'name' => env('PROMETHEUS_HTTP_COUNTER_NAME', 'http'),
+        ],
+        'histogram' => [
+            /** Enable histogram metric type */
+            'enabled' => true,
+            'name' => env('PROMETHEUS_HTTP_HISTOGRAM_NAME', 'http_latency'),
+            /** Buckets for histogram metric type */
+            'buckets' => [0.02, 0.05, 0.1, 0.2, 0.5, 1, 1.5, 2.0],
+        ],
+    ],
     'export' => [
         'enabled' => true,
         'method' => 'GET',
