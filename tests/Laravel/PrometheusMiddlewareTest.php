@@ -469,11 +469,11 @@ class PrometheusMiddlewareTest extends TestCase
         $this->get('/homepage')->assertSuccessful();
     }
 
-    public function testRequestAndResponseKeysConsiderNamingKeysFromConfig()
+    public function testRequestAndResponseKeysConsiderLabelsKeysFromConfig()
     {
         $this->startTime();
         config([
-            'prometheus.request.naming' => $naming = [
+            'prometheus.request.labels' => $labels = [
                 'method' => '_method',
                 'url' => 'path',
                 'status' => 'code',
@@ -484,10 +484,10 @@ class PrometheusMiddlewareTest extends TestCase
 
         $metric->expects($this->once())
                ->method('counter')
-               ->willReturn(tap($this->createMock(Counter::class), function ($counter) use ($naming) {
+               ->willReturn(tap($this->createMock(Counter::class), function ($counter) use ($labels) {
                    $counter->method('labels')
-                           ->with($this->callback(function ($args) use ($naming) {
-                               $expectedKeys = array_values($naming);
+                           ->with($this->callback(function ($args) use ($labels) {
+                               $expectedKeys = array_values($labels);
 
                                return $expectedKeys == array_keys($args);
                            }))
@@ -497,10 +497,10 @@ class PrometheusMiddlewareTest extends TestCase
 
         $metric->expects($this->once())
                ->method('histogram')
-               ->willReturn(tap($this->createMock(Histogram::class), function ($histogram) use ($naming) {
+               ->willReturn(tap($this->createMock(Histogram::class), function ($histogram) use ($labels) {
                    $histogram->method('labels')
-                             ->with($this->callback(function ($args) use ($naming) {
-                                 $expectedKeys = array_values($naming);
+                             ->with($this->callback(function ($args) use ($labels) {
+                                 $expectedKeys = array_values($labels);
 
                                  return $expectedKeys == array_keys($args);
                              }))

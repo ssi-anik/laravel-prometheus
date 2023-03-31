@@ -41,19 +41,19 @@ class PrometheusMiddleware
                 }
             }
 
-            if (false !== Matcher::matches($methods, $request->getMethod())) {
+            if ($methods && false !== Matcher::matches($methods, $request->getMethod())) {
                 return;
             }
         }
 
         $requestData = app(
             $config['extractor']['request'] ?? RequestExtractor::class,
-            ['request' => $request, 'naming' => $config['naming']]
+            ['request' => $request, 'labels' => $config['labels']]
         )->toArray();
 
         $responseData = app(
             $config['extractor']['response'] ?? ResponseExtractor::class,
-            ['response' => $response, 'naming' => $config['naming']]
+            ['response' => $response, 'labels' => $config['labels']]
         )->toArray();
 
         $data = array_merge($requestData, $responseData);

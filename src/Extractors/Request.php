@@ -10,12 +10,12 @@ class Request implements Arrayable
 {
     /** @var \Illuminate\Http\Request|\Laravel\Lumen\Http\Request $request */
     protected $request;
-    protected array $naming;
+    protected array $labels;
 
-    public function __construct($request, array $naming = [])
+    public function __construct($request, array $labels = [])
     {
         $this->request = $request;
-        $this->naming = $naming;
+        $this->labels = $labels;
     }
 
     protected function getRouteAction(): array
@@ -55,8 +55,8 @@ class Request implements Arrayable
         $action = $this->getRouteAction();
 
         return [
-            ($this->naming['method'] ?? 'method') => $this->request->method(),
-            ($this->naming['url'] ?? 'url') => $this->routeAs($action) ?? $this->routeUses($action) ?? $this->request->path(),
+            ($this->labels['method'] ?? 'method') => $this->request->method(),
+            ($this->labels['url'] ?? 'url') => $this->routeAs($action) ?? $this->routeUses($action) ?? $this->request->path(),
         ];
     }
 }

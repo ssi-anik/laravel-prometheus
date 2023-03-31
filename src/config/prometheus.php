@@ -48,7 +48,7 @@ return [
         ],
 
         /** Rename metric labels */
-        'naming' => [
+        'labels' => [
             'method' => 'method',
             'url' => 'url',
             'status' => 'status',
