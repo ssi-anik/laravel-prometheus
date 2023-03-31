@@ -4,10 +4,10 @@ namespace Anik\Laravel\Prometheus\Middlewares;
 
 use Anik\Laravel\Prometheus\Extractors\Request as RequestExtractor;
 use Anik\Laravel\Prometheus\Extractors\Response as ResponseExtractor;
+use Anik\Laravel\Prometheus\Matcher;
 use Anik\Laravel\Prometheus\PrometheusManager;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Symfony\Component\HttpFoundation\Response;
 
 class PrometheusMiddleware
@@ -29,29 +29,20 @@ class PrometheusMiddleware
 
         $config = config('prometheus.request');
         if ($methods = $config['ignore']['methods'] ?? []) {
-            foreach (Arr::wrap($methods) as $method) {
-                if ($request->isMethod($method)) {
-                    return;
-                }
+            if (false !== Matcher::matches($methods, $request->getMethod())) {
+                return;
             }
         }
 
         if ($paths = $config['ignore']['paths'] ?? []) {
-            foreach ($paths as $path => $method) {
-                if (!$request->is($path)) {
-                    continue;
-                }
-
-                if ($method === '' || $method === '*') {
+            if (false !== ($methods = Matcher::matches($paths, $request->decodedPath()))) {
+                if (empty($methods) || $methods === '*') {
                     return;
                 }
+            }
 
-                // Supports multiple verbs
-                foreach (Arr::wrap($method) as $method) {
-                    if ($request->isMethod($method)) {
-                        return;
-                    }
-                }
+            if (false !== Matcher::matches($methods, $request->getMethod())) {
+                return;
             }
         }
 
