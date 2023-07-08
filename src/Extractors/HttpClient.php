@@ -8,32 +8,41 @@ use Illuminate\Contracts\Support\Arrayable;
 class HttpClient implements Arrayable
 {
     protected TransferStats $stats;
-    protected array $naming;
+    protected array $labels;
+    protected array $modifiers;
 
-    public function __construct(TransferStats $stats, array $naming = [])
+    public function __construct(TransferStats $stats, array $labels = [], array $modifiers = [])
     {
         $this->stats = $stats;
-        $this->naming = $naming;
+        $this->labels = $labels;
+        $this->modifiers = $modifiers;
     }
 
     public function toArray(): array
     {
+        $stats = $this->stats;
+        $scheme = $stats->getRequest()->getUri()->getScheme();
+        $host = $stats->getRequest()->getUri()->getHost();
+        $path = $stats->getRequest()->getUri()->getPath();
+        $method = $stats->getRequest()->getMethod();
+        $status = $stats->getResponse()->getStatusCode();
+
         $data = [];
 
-        if (isset($this->naming['scheme'])) {
-            $data[$this->naming['scheme']] = '';
+        if (isset($this->labels['scheme'])) {
+            $data[$this->labels['scheme']] = $scheme;
         }
-        if (isset($this->naming['host'])) {
-            $data[$this->naming['host']] = '';
+        if (isset($this->labels['host'])) {
+            $data[$this->labels['host']] = $host;
         }
-        if (isset($this->naming['path'])) {
-            $data[$this->naming['path']] = '';
+        if (isset($this->labels['path'])) {
+            $data[$this->labels['path']] = $path;
         }
-        if (isset($this->naming['method'])) {
-            $data[$this->naming['method']] = '';
+        if (isset($this->labels['method'])) {
+            $data[$this->labels['method']] = $method;
         }
-        if (isset($this->naming['status'])) {
-            $data[$this->naming['status']] = '';
+        if (isset($this->labels['status'])) {
+            $data[$this->labels['status']] = $status;
         }
 
         return $data;

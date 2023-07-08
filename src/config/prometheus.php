@@ -113,7 +113,7 @@ return [
         'ignore' => [],
 
         /** Rename metric labels */
-        'naming' => [
+        'labels' => [
             'scheme' => 'scheme',
             'host' => 'host',
             'path' => 'path',

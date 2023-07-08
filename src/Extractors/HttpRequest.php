@@ -6,16 +6,41 @@ use Closure;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 
-class Request implements Arrayable
+class HttpRequest implements Arrayable
 {
     /** @var \Illuminate\Http\Request|\Laravel\Lumen\Http\Request $request */
     protected $request;
+
+    /** @var \Symfony\Component\HttpFoundation\Response | \Illuminate\Http\Response $response */
+    protected $response;
+
     protected array $labels;
 
-    public function __construct($request, array $labels = [])
+    public function __construct($request, $response, array $labels = [])
     {
         $this->request = $request;
+        $this->response = $response;
         $this->labels = $labels;
+    }
+
+    public function toArray(): array
+    {
+        $data = [];
+
+        if (isset($this->labels['url'])) {
+            $action = $this->getRouteAction();
+            $data[$this->labels['url']] = $this->routeAs($action) ?? $this->routeUses($action) ?? $this->request->path();
+        }
+
+        if (isset($this->labels['method'])) {
+            $data[$this->labels['method']] = $this->request->method();
+        }
+
+        if (isset($this->labels['status'])) {
+            $data[$this->labels['status']] = $this->response->getStatusCode();
+        }
+
+        return $data;
     }
 
     protected function getRouteAction(): array
@@ -48,15 +73,5 @@ class Request implements Arrayable
         }
 
         return is_null($uses) ? null : implode('@', Arr::wrap($uses));
-    }
-
-    public function toArray(): array
-    {
-        $action = $this->getRouteAction();
-
-        return [
-            ($this->labels['method'] ?? 'method') => $this->request->method(),
-            ($this->labels['url'] ?? 'url') => $this->routeAs($action) ?? $this->routeUses($action) ?? $this->request->path(),
-        ];
     }
 }

@@ -140,13 +140,14 @@ class HttpRequestTest extends TestCase
                         ['GET', 'https://example.com/200'],
                         ['POST', 'https://example.com/200'],
                         ['GET', 'https://example.org/200'],
+                        ['GET', 'https://example.com/extra'],
                         ['POST', 'https://example.org/400'],
                         ['DELETE', 'https://example.org/500'],
                         ['PATCH', 'https://example.org/500'],
                     ],
                     'expects' => [
-                        'getOrRegisterCounter' => 1,
-                        'getOrRegisterHistogram' => 1,
+                        'getOrRegisterCounter' => 2,
+                        'getOrRegisterHistogram' => 2,
                     ],
                 ],
             ],
@@ -296,10 +297,10 @@ class HttpRequestTest extends TestCase
         Http::get('https://example.com/200');
     }
 
-    public function testLabelKeysConsiderNamingKeysFromConfig()
+    public function testLabelKeysConsiderLabelsKeysFromConfig()
     {
         config([
-            'prometheus.http.naming' => $naming = [
+            'prometheus.http.labels' => $labels = [
                 'scheme' => '_scheme',
                 'host' => '_host',
                 'path' => '_path',
@@ -312,10 +313,10 @@ class HttpRequestTest extends TestCase
 
         $metric->expects($this->once())
                ->method('counter')
-               ->willReturn(tap($this->createMock(Counter::class), function ($counter) use ($naming) {
+               ->willReturn(tap($this->createMock(Counter::class), function ($counter) use ($labels) {
                    $counter->method('labels')
-                           ->with($this->callback(function ($args) use ($naming) {
-                               $expectedKeys = array_values($naming);
+                           ->with($this->callback(function ($args) use ($labels) {
+                               $expectedKeys = array_values($labels);
 
                                return $expectedKeys == array_keys($args);
                            }))
@@ -325,10 +326,10 @@ class HttpRequestTest extends TestCase
 
         $metric->expects($this->once())
                ->method('histogram')
-               ->willReturn(tap($this->createMock(Histogram::class), function ($histogram) use ($naming) {
+               ->willReturn(tap($this->createMock(Histogram::class), function ($histogram) use ($labels) {
                    $histogram->method('labels')
-                             ->with($this->callback(function ($args) use ($naming) {
-                                 $expectedKeys = array_values($naming);
+                             ->with($this->callback(function ($args) use ($labels) {
+                                 $expectedKeys = array_values($labels);
 
                                  return $expectedKeys == array_keys($args);
                              }))
@@ -347,7 +348,7 @@ class HttpRequestTest extends TestCase
     public function testLabelKeysAreSetIfKeyIsPresentInConfig()
     {
         config([
-            'prometheus.http.naming' => $naming = [
+            'prometheus.http.labels' => $labels = [
                 'host' => 'host_',
                 'method' => 'method_',
             ],
@@ -357,10 +358,10 @@ class HttpRequestTest extends TestCase
 
         $metric->expects($this->once())
                ->method('counter')
-               ->willReturn(tap($this->createMock(Counter::class), function ($counter) use ($naming) {
+               ->willReturn(tap($this->createMock(Counter::class), function ($counter) use ($labels) {
                    $counter->method('labels')
-                           ->with($this->callback(function ($args) use ($naming) {
-                               $expectedKeys = array_values($naming);
+                           ->with($this->callback(function ($args) use ($labels) {
+                               $expectedKeys = array_values($labels);
 
                                return $expectedKeys == array_keys($args);
                            }))
@@ -370,10 +371,10 @@ class HttpRequestTest extends TestCase
 
         $metric->expects($this->once())
                ->method('histogram')
-               ->willReturn(tap($this->createMock(Histogram::class), function ($histogram) use ($naming) {
+               ->willReturn(tap($this->createMock(Histogram::class), function ($histogram) use ($labels) {
                    $histogram->method('labels')
-                             ->with($this->callback(function ($args) use ($naming) {
-                                 $expectedKeys = array_values($naming);
+                             ->with($this->callback(function ($args) use ($labels) {
+                                 $expectedKeys = array_values($labels);
 
                                  return $expectedKeys == array_keys($args);
                              }))
@@ -453,9 +454,12 @@ class HttpRequestTest extends TestCase
             'example.com/200' => Http::response(['foo' => 'bar']),
             'example.com/400' => Http::response(['foo' => 'bar'], 400),
             'example.com/500' => Http::response(['foo' => 'bar'], 500),
+            'example.com/extra' => Http::response(['foo' => 'bar'], 202),
+
             'example.org/200' => Http::response(['foo' => 'bar']),
             'example.org/400' => Http::response(['foo' => 'bar'], 400),
             'example.org/500' => Http::response(['foo' => 'bar'], 500),
+            'example.org/extra' => Http::response(['foo' => 'bar'], 202),
         ]);
     }
 }

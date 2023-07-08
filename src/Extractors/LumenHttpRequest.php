@@ -2,7 +2,7 @@
 
 namespace Anik\Laravel\Prometheus\Extractors;
 
-class LumenRequest extends Request
+class LumenHttpRequest extends HttpRequest
 {
     protected function getRouteAction(): array
     {

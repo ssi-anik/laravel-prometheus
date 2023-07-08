@@ -4,6 +4,7 @@ namespace Anik\Laravel\Prometheus\Test\Lumen;
 
 use Anik\Laravel\Prometheus\Collector\Counter;
 use Anik\Laravel\Prometheus\Collector\Histogram;
+use Anik\Laravel\Prometheus\Extractors\HttpRequest;
 use Anik\Laravel\Prometheus\Extractors\Response;
 use Anik\Laravel\Prometheus\Metric;
 use Anik\Laravel\Prometheus\Middlewares\PrometheusMiddleware;
@@ -450,24 +451,11 @@ class PrometheusMiddlewareTest extends TestCase
     public function testRequestExtractorCanBeSetFromConfig()
     {
         $this->startTime();
-        config(['prometheus.request.extractor.request' => '_extractor.request']);
+        config(['prometheus.request.extractor' => '_extractor']);
 
-        $request = $this->createMock(\Anik\Laravel\Prometheus\Extractors\Request::class);
+        $request = $this->createMock(HttpRequest::class);
         $request->expects($this->once())->method('toArray');
-        $this->app->bind('_extractor.request', fn() => $request);
-
-        $this->addRoute('/homepage');
-        $this->get('/homepage')->assertResponseOk();
-    }
-
-    public function testResponseExtractorCanBeSetFromConfig()
-    {
-        $this->startTime();
-        config(['prometheus.request.extractor.response' => '_extractor.response']);
-
-        $request = $this->createMock(Response::class);
-        $request->expects($this->once())->method('toArray');
-        $this->app->bind('_extractor.response', fn() => $request);
+        $this->app->bind('_extractor', fn() => $request);
 
         $this->addRoute('/homepage');
         $this->get('/homepage')->assertResponseOk();

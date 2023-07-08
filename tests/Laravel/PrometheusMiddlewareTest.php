@@ -4,6 +4,7 @@ namespace Anik\Laravel\Prometheus\Test\Laravel;
 
 use Anik\Laravel\Prometheus\Collector\Counter;
 use Anik\Laravel\Prometheus\Collector\Histogram;
+use Anik\Laravel\Prometheus\Extractors\HttpRequest;
 use Anik\Laravel\Prometheus\Metric;
 use Anik\Laravel\Prometheus\Middlewares\PrometheusMiddleware;
 use Anik\Laravel\Prometheus\PrometheusManager;
@@ -443,42 +444,96 @@ class PrometheusMiddlewareTest extends TestCase
         $this->get('/homepage')->assertSuccessful();
     }
 
-    public function testRequestExtractorCanBeSetFromConfig()
+    public function testExtractorCanBeSetFromConfig()
     {
         $this->startTime();
-        config(['prometheus.request.extractor.request' => '_extractor.request']);
+        config(['prometheus.request.extractor' => '_extractor']);
 
-        $request = $this->createMock(\Anik\Laravel\Prometheus\Extractors\Request::class);
+        $request = $this->createMock(HttpRequest::class);
         $request->expects($this->once())->method('toArray');
-        $this->app->bind('_extractor.request', fn() => $request);
+        $this->app->bind('_extractor', fn() => $request);
 
         $this->addRoute('/homepage');
         $this->get('/homepage')->assertSuccessful();
     }
 
-    public function testResponseExtractorCanBeSetFromConfig()
+    public static function allowEmptyDataProvider(): array
+    {
+        return [
+            'allow empty is disabled by default' => [false],
+            'allow empty is set to true' => [true],
+        ];
+    }
+
+    /** @dataProvider allowEmptyDataProvider */
+    public function testMetricsWillBeSkippedIfExtractorReturnEmptyArrayAsData(bool $allowEmpty)
     {
         $this->startTime();
-        config(['prometheus.request.extractor.response' => '_extractor.response']);
+        config(['prometheus.request.extractor' => '_extractor']);
+        if ($allowEmpty) {
+            config(['prometheus.request.allow_empty' => true]);
+        }
 
-        $response = $this->createMock(\Anik\Laravel\Prometheus\Extractors\Response::class);
-        $response->expects($this->once())->method('toArray');
-        $this->app->bind('_extractor.response', fn() => $response);
+        $request = $this->createMock(HttpRequest::class);
+        $request->method('toArray')->willReturn([]);
+        $this->app->bind('_extractor', fn() => $request);
+
+        $metric = $this->createMock(Metric::class);
+
+        $metric->expects($allowEmpty ? $this->once() : $this->never())
+               ->method('counter')
+               ->willReturn(tap($this->createMock(Counter::class), function ($counter) {
+                   $counter->method($this->anything())->willReturn($counter);
+               }));
+
+        $metric->expects($allowEmpty ? $this->once() : $this->never())
+               ->method('histogram')
+               ->willReturn(tap($this->createMock(Histogram::class), function ($histogram) {
+                   $histogram->method($this->anything())->willReturn($histogram);
+               }));
+
+        $manager = $this->createMock(PrometheusManager::class);
+        $manager->method('metric')->willReturn($metric);
+
+        $this->app->bind(PrometheusManager::class, fn() => $manager);
 
         $this->addRoute('/homepage');
         $this->get('/homepage')->assertSuccessful();
     }
 
-    public function testRequestAndResponseKeysConsiderLabelsKeysFromConfig()
+    public static function metricLabelsDataProvider(): array
     {
-        $this->startTime();
-        config([
-            'prometheus.request.labels' => $labels = [
-                'method' => '_method',
-                'url' => 'path',
-                'status' => 'code',
+        return [
+            'uses default labels' => [[]],
+            'renaming labels' => [
+                [
+                    'method' => '_method',
+                    'url' => 'path',
+                    'status' => 'code',
+                ]
             ],
-        ]);
+            'skipping few labels' => [
+                [
+                    'status' => 'code',
+                ]
+            ],
+        ];
+    }
+
+    /** @dataProvider metricLabelsDataProvider */
+    public function testRequestAndResponseKeysConsiderLabelsKeysFromConfig(array $labels)
+    {
+        $this->startTime();
+        if ($labels) {
+            config(['prometheus.request.labels' => $labels,]);
+        } else {
+            // default labels from prometheus config
+            $labels = [
+                'method' => 'method',
+                'url' => 'url',
+                'status' => 'status',
+            ];
+        }
 
         $metric = $this->createMock(Metric::class);
 
@@ -488,8 +543,12 @@ class PrometheusMiddlewareTest extends TestCase
                    $counter->method('labels')
                            ->with($this->callback(function ($args) use ($labels) {
                                $expectedKeys = array_values($labels);
+                               $providedKeys = array_keys($args);
 
-                               return $expectedKeys == array_keys($args);
+                               asort($expectedKeys);
+                               asort($providedKeys);
+
+                               return array_values($expectedKeys) == array_values($providedKeys);
                            }))
                            ->willReturn($counter);
                    $counter->method('increment')->willReturn($counter);
@@ -501,8 +560,12 @@ class PrometheusMiddlewareTest extends TestCase
                    $histogram->method('labels')
                              ->with($this->callback(function ($args) use ($labels) {
                                  $expectedKeys = array_values($labels);
+                                 $providedKeys = array_keys($args);
 
-                                 return $expectedKeys == array_keys($args);
+                                 asort($expectedKeys);
+                                 asort($providedKeys);
+
+                                 return array_values($expectedKeys) == array_values($providedKeys);
                              }))
                              ->willReturn($histogram);
                    $histogram->method('observe')->willReturn($histogram);

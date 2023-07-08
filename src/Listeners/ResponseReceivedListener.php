@@ -3,18 +3,17 @@
 namespace Anik\Laravel\Prometheus\Listeners;
 
 use Anik\Laravel\Prometheus\Extractors\HttpClient;
+use Anik\Laravel\Prometheus\Matcher;
 use Anik\Laravel\Prometheus\PrometheusManager;
 use GuzzleHttp\TransferStats;
 use Illuminate\Http\Client\Events\ResponseReceived;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 class ResponseReceivedListener
 {
     public function handle(ResponseReceived $event): void
     {
         $stats = $event->response->transferStats;
-        
+
         $stats ? $this->processTransferStats($stats) : null;
     }
 
@@ -23,11 +22,6 @@ class ResponseReceivedListener
         $config = config('prometheus.http');
 
         $callback = function () use ($config, $stats) {
-            $ignore = $config['ignore'] ?? [];
-            $host = $stats->getRequest()->getUri()->getHost();
-            $path = $stats->getRequest()->getUri()->getPath();
-            $method = $stats->getRequest()->getMethod();
-
             /**
              * Sample
              * [
@@ -40,45 +34,33 @@ class ResponseReceivedListener
              *      "example.cc" => [],
              * ]
              */
-            foreach ($ignore as $hostPatterns => $paths) {
-                if (!Str::is($hostPatterns, $host)) {
-                    continue;
-                }
 
+            $hosts = $config['ignore'] ?? [];
+            if ($hosts && false !== ($paths = Matcher::matches($hosts, $stats->getRequest()->getUri()->getHost()))) {
                 if (empty($paths)) {
                     return;
                 }
 
-                foreach ($paths as $key => $value) {
-                    if (is_numeric($key)) {
-                        // indexed array, value is the path pattern
-                        $pathPattern = $value;
-                        $methods = [];
-                    } else {
-                        // associative array
-                        $pathPattern = $key;
-                        $methods = $value;
-                    }
-
-                    if (!Str::is($pathPattern, $path)) {
-                        continue;
-                    }
-
-                    if (empty($methods)) {
+                // Check for matching paths
+                if (false !== ($methods = Matcher::matches($paths, $stats->getRequest()->getUri()->getPath()))) {
+                    if (empty($methods) || $methods === '*') {
                         return;
                     }
 
-                    foreach (Arr::wrap($methods) as $methodPattern) {
-                        if (Str::is(strtoupper($methodPattern), $method)) {
-                            return;
-                        }
+                    // Check for matching Http methods/verbs
+                    if (false !== Matcher::matches($methods, $stats->getRequest()->getMethod())) {
+                        return;
                     }
                 }
             }
 
             $data = app(
                 $config['extractor'] ?? HttpClient::class,
-                ['stats' => $stats, 'naming' => $config['naming']]
+                [
+                    'stats' => $stats,
+                    'labels' => $config['labels'],
+                    'modifiers' => $config['modifiers'] ?? [],
+                ]
             )->toArray();
 
             /** @var \Anik\Laravel\Prometheus\Metric $metric */

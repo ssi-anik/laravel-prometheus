@@ -2,8 +2,7 @@
 
 namespace Anik\Laravel\Prometheus\Middlewares;
 
-use Anik\Laravel\Prometheus\Extractors\Request as RequestExtractor;
-use Anik\Laravel\Prometheus\Extractors\Response as ResponseExtractor;
+use Anik\Laravel\Prometheus\Extractors\HttpRequest;
 use Anik\Laravel\Prometheus\Matcher;
 use Anik\Laravel\Prometheus\PrometheusManager;
 use Closure;
@@ -39,24 +38,21 @@ class PrometheusMiddleware
                 if (empty($methods) || $methods === '*') {
                     return;
                 }
-            }
 
-            if ($methods && false !== Matcher::matches($methods, $request->getMethod())) {
-                return;
+                if (false !== Matcher::matches($methods, $request->getMethod())) {
+                    return;
+                }
             }
         }
 
-        $requestData = app(
-            $config['extractor']['request'] ?? RequestExtractor::class,
-            ['request' => $request, 'labels' => $config['labels']]
+        $data = app(
+            $config['extractor'] ?? HttpRequest::class,
+            ['request' => $request, 'response' => $response, 'labels' => $config['labels']]
         )->toArray();
 
-        $responseData = app(
-            $config['extractor']['response'] ?? ResponseExtractor::class,
-            ['response' => $response, 'labels' => $config['labels']]
-        )->toArray();
-
-        $data = array_merge($requestData, $responseData);
+        if (empty($data) && ($config['allow_empty'] ?? false) !== true) {
+            return;
+        }
 
         /** @var \Anik\Laravel\Prometheus\Metric $metric */
         $metric = app(PrometheusManager::class)->metric();
