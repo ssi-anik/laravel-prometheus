@@ -2,8 +2,8 @@
 
 namespace Anik\Laravel\Prometheus\Providers;
 
-use Anik\Laravel\Prometheus\Extractors\LumenHttpRequest;
 use Anik\Laravel\Prometheus\Extractors\HttpRequest;
+use Anik\Laravel\Prometheus\Extractors\LumenHttpRequest;
 use Anik\Laravel\Prometheus\Middlewares\PrometheusMiddleware;
 
 class LumenPrometheusServiceProvider extends PrometheusServiceProvider
@@ -15,9 +15,9 @@ class LumenPrometheusServiceProvider extends PrometheusServiceProvider
         $this->app->bind(HttpRequest::class, fn($app, $args) => new LumenHttpRequest(...array_values($args)));
     }
 
-    protected function addTerminableMiddlewareToRouter()
+    public function isLumen(): bool
     {
-        $this->app->middleware(PrometheusMiddleware::class);
+        return true;
     }
 
     public function provides(): array
@@ -25,5 +25,10 @@ class LumenPrometheusServiceProvider extends PrometheusServiceProvider
         return array_merge(parent::provides(), [
             HttpRequest::class,
         ]);
+    }
+
+    protected function addTerminableMiddlewareToRouter()
+    {
+        $this->app->middleware(PrometheusMiddleware::class);
     }
 }

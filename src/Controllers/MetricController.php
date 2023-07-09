@@ -4,21 +4,17 @@ namespace Anik\Laravel\Prometheus\Controllers;
 
 use Anik\Laravel\Prometheus\PrometheusManager;
 use Illuminate\Http\Request;
-use Prometheus\CollectorRegistry;
 use Prometheus\RenderTextFormat;
 
 class MetricController
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request, PrometheusManager $manager)
     {
-        $storage = $request->query('storage');
-        $registry = new CollectorRegistry(
-            app()->make(PrometheusManager::class)->adapter($storage),
-            false
-        );
-
         $renderer = new RenderTextFormat();
-        $result = $renderer->render($registry->getMetricFamilySamples());
+        $result = $renderer->render($manager->samples(
+            $request->query('storage'),
+            filter_var($request->query('default_metrics'), FILTER_VALIDATE_BOOLEAN)
+        )->collect());
 
         return response(
             $result,

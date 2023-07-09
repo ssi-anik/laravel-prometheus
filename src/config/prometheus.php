@@ -9,6 +9,7 @@ return [
     'storage' => env('PROMETHEUS_STORAGE', 'redis'),
     'options' => [
         'redis' => [
+            'driver' => 'redis',
             'host' => env('PROMETHEUS_REDIS_HOST', '127.0.0.1'),
             'username' => env('PROMETHEUS_REDIS_USERNAME'),
             'password' => env('PROMETHEUS_REDIS_PASSWORD'),
@@ -18,8 +19,8 @@ return [
             'read_timeout' => env('PROMETHEUS_REDIS_READ_TIMEOUT', 10),
             'persistent_connections' => env('PROMETHEUS_REDIS_PERSISTENT_CONNECTION', false),
         ],
-        /*'apc' => ['prometheusPrefix' => ''],
-        'apcng' => ['prometheusPrefix' => ''],*/
+        /*'apc' => ['driver' => 'apc', 'prometheusPrefix' => ''],
+        'apcng' => ['driver' => 'apcng', 'prometheusPrefix' => ''],*/
     ],
     'request' => [
         /** Enable request response metrics */

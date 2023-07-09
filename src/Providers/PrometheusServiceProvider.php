@@ -10,7 +10,6 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 
 class PrometheusServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -22,11 +21,30 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
         $this->enableHttpMetrics();
     }
 
+    public function register(): void
+    {
+        $this->registerBindings();
+    }
+
+    public function provides(): array
+    {
+        return [
+            'prometheus',
+            PrometheusManager::class,
+            PrometheusMiddleware::class,
+        ];
+    }
+
+    protected function isLumen(): bool
+    {
+        return false;
+    }
+
     protected function publishAndMergeConfig()
     {
         $path = realpath(__DIR__ . '/../config/prometheus.php');
 
-        if ($this->app->runningInConsole() && !Str::contains($this->app->version(), 'Lumen')) {
+        if ($this->app->runningInConsole() && !$this->isLumen()) {
             $this->publishes([$path => config_path('prometheus.php'),]);
         }
 
@@ -89,28 +107,9 @@ class PrometheusServiceProvider extends ServiceProvider implements DeferrablePro
         $this->app[Kernel::class]->pushMiddleware(PrometheusMiddleware::class);
     }
 
-    public function register(): void
-    {
-        $this->registerManagers();
-        $this->registerFacades();
-    }
-
-    protected function registerManagers(): void
+    protected function registerBindings(): void
     {
         $this->app->singleton(PrometheusManager::class, fn($app) => new PrometheusManager($app));
-    }
-
-    protected function registerFacades(): void
-    {
         $this->app->bind('prometheus', fn($app) => $app->make(PrometheusManager::class));
-    }
-
-    public function provides(): array
-    {
-        return [
-            'prometheus',
-            PrometheusManager::class,
-            PrometheusMiddleware::class,
-        ];
     }
 }

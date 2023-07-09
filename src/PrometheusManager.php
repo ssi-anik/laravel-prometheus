@@ -4,16 +4,17 @@ namespace Anik\Laravel\Prometheus;
 
 use Anik\Laravel\Prometheus\Exceptions\PrometheusException;
 use Illuminate\Container\Container;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Str;
+use Prometheus\CollectorRegistry;
 use Prometheus\Storage\Adapter;
 use Prometheus\Storage\APC;
 use Prometheus\Storage\APCng;
 use Prometheus\Storage\InMemory;
 use Prometheus\Storage\Redis;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
-/**
- * @mixin \Anik\Laravel\Prometheus\Metric
- */
 class PrometheusManager
 {
     protected Container $app;
@@ -23,6 +24,129 @@ class PrometheusManager
     public function __construct(Container $app)
     {
         $this->app = $app;
+    }
+
+    /**
+     * @throws BindingResolutionException
+     */
+    public function createRedisAdapter(array $config): Adapter
+    {
+        if (isset($config['prefix'])) {
+            Redis::setPrefix($config['prefix']);
+            unset($config['prefix']);
+        }
+
+        return $this->app->make(Redis::class, [
+            'options' => $config,
+        ]);
+    }
+
+    /**
+     * @throws BindingResolutionException
+     */
+    public function createApcAdapter(array $config): Adapter
+    {
+        return $this->app->make(APC::class, [
+            'prometheusPrefix' => $config['prometheusPrefix'] ?? '',
+        ]);
+    }
+
+    /**
+     * @throws BindingResolutionException
+     */
+    public function createApcngAdapter(array $config): Adapter
+    {
+        return $this->app->make(APCng::class, [
+            'prometheusPrefix' => $config['prometheusPrefix'] ?? '',
+        ]);
+    }
+
+    /**
+     * @throws BindingResolutionException
+     */
+    public function createMemoryAdapter(): Adapter
+    {
+        return $this->createInMemoryAdapter();
+    }
+
+    /**
+     * @throws BindingResolutionException
+     */
+    public function createInMemoryAdapter(): Adapter
+    {
+        return $this->app->make(InMemory::class);
+    }
+
+    /**
+     * @throws BindingResolutionException
+     */
+    public function collectorRegistry(Adapter $adapter, bool $defaultMetrics = false): CollectorRegistry
+    {
+        return $this->app->make(CollectorRegistry::class, [
+            'storageAdapter' => $adapter,
+            'registerDefaultMetrics' => $defaultMetrics,
+        ]);
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws PrometheusException
+     * @throws NotFoundExceptionInterface
+     */
+    public function metric(?string $storage = null, ?string $namespace = null): Metric
+    {
+        return new Metric(
+            $this->collectorRegistry($this->adapter($storage)),
+            $namespace ?? $this->fromConfig('namespace', '')
+        );
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws PrometheusException
+     * @throws BindingResolutionException
+     */
+    public function samples(?string $storage = null, bool $defaultMetrics = false): Samples
+    {
+        return new Samples($this->collectorRegistry($this->adapter($storage), $defaultMetrics));
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws PrometheusException
+     */
+    public function adapter(?string $storage = null): Adapter
+    {
+        $storage = $storage ?? $this->getDefaultStorage();
+
+        if (isset($this->adapters[$storage])) {
+            return $this->adapters[$storage];
+        }
+
+        $config = $this->fromConfig('options.' . $storage);
+        if (empty($config)) {
+            throw new PrometheusException('Storage configuration is not defined.');
+        }
+
+        $driver = $config['driver'] ?? null;
+        unset($config['driver']);
+
+        if (empty($driver)) {
+            throw new PrometheusException(sprintf('Driver missing for "%s"', $storage));
+        }
+
+        $method = 'create' . Str::studly($driver) . 'Adapter';
+        if (method_exists($this, $method)) {
+            return $this->adapters[$storage] = call_user_func([$this, $method], $config);
+        }
+
+        $adapter = $this->app->get($driver);
+
+        if (!$adapter instanceof Adapter) {
+            throw new PrometheusException(sprintf('%s is not an instance of %s', $driver, Adapter::class));
+        }
+
+        return $this->adapters[$storage] = $adapter;
     }
 
     protected function fromConfig(string $key, $default = null)
@@ -35,102 +159,5 @@ class PrometheusManager
     protected function getDefaultStorage(): string
     {
         return $this->fromConfig('storage', 'redis');
-    }
-
-    /**
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Anik\Laravel\Prometheus\Exceptions\PrometheusException
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
-    public function metric(?string $storage = null): Metric
-    {
-        return new Metric($this->adapter($storage), $this->fromConfig('namespace', ''));
-    }
-
-    /**
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     * @throws \Anik\Laravel\Prometheus\Exceptions\PrometheusException
-     */
-    public function adapter(?string $storage = null): Adapter
-    {
-        $storage = $storage ?? $this->getDefaultStorage();
-
-        if (isset($this->adapters[$storage])) {
-            return $this->adapters[$storage];
-        }
-
-        $method = 'create' . Str::studly($storage) . 'Adapter';
-        if (method_exists($this, $method)) {
-            return $this->adapters[$storage] = call_user_func([$this, $method]);
-        }
-
-        $adapter = $this->app->get($storage);
-
-        if (!$adapter instanceof Adapter) {
-            throw new PrometheusException(sprintf('%s is not an instance of %s', $storage, Adapter::class));
-        }
-
-        return $this->adapters[$storage] = $adapter;
-    }
-
-    /**
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function createRedisAdapter(): Adapter
-    {
-        $options = $this->fromConfig('options.redis', []);
-        if (isset($options['prefix'])) {
-            Redis::setPrefix($options['prefix']);
-            unset($options['prefix']);
-        }
-
-        return $this->app->make(Redis::class, [
-            'options' => $options,
-        ]);
-    }
-
-    /**
-     * @throws \Prometheus\Exception\StorageException
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function createApcAdapter(): Adapter
-    {
-        return $this->app->make(APC::class, $this->fromConfig('options.apc', []));
-    }
-
-    /**
-     * @throws \Prometheus\Exception\StorageException
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function createApcngAdapter(): Adapter
-    {
-        return $this->app->make(APCng::class, $this->fromConfig('options.apcng', []));
-    }
-
-    /**
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function createMemoryAdapter(): Adapter
-    {
-        return $this->createInMemoryAdapter();
-    }
-
-    /**
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function createInMemoryAdapter(): Adapter
-    {
-        return $this->app->make(InMemory::class);
-    }
-
-    /**
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Anik\Laravel\Prometheus\Exceptions\PrometheusException
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
-    public function __call($name, $arguments)
-    {
-        return $this->metric()->$name(...$arguments);
     }
 }
